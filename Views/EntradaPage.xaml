@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SigaCean.Views.EntradaPage"
+             Title="Registrar Entrada">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28" Spacing="18">
+
+            <Label Text="Registrar Entrada" Style="{StaticResource PageTitle}" />
+            <Label Text="Adicione produtos ao estoque." Style="{StaticResource PageSubtitle}" />
+
+            <!-- TODO: formulário de entrada: produto, quantidade, origem, AF/documento, validade (MovimentacaoService) -->
+            <Label Text="Tela em construção." Style="{StaticResource MutedLabel}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

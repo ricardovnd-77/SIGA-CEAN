@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SigaCean.Views.DashboardPage"
+             Title="Dashboard">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28" Spacing="18">
+
+            <Label Text="Dashboard" Style="{StaticResource PageTitle}" />
+            <Label Text="Visão geral do estoque." Style="{StaticResource PageSubtitle}" />
+
+            <!-- TODO: indicadores úteis para o dia a dia (estoque baixo, validade, movimentações recentes) usando EstoqueService e MovimentacaoService -->
+            <Label Text="Tela em construção." Style="{StaticResource MutedLabel}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

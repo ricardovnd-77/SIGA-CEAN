@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SigaCean.Views.SaidaPage"
+             Title="Registrar Saída">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28" Spacing="18">
+
+            <Label Text="Registrar Saída" Style="{StaticResource PageTitle}" />
+            <Label Text="Retire produtos do estoque." Style="{StaticResource PageSubtitle}" />
+
+            <!-- TODO: formulário de saída: produto, quantidade, destino, quem retirou (MovimentacaoService) -->
+            <Label Text="Tela em construção." Style="{StaticResource MutedLabel}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

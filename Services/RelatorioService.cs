@@ -17,40 +17,78 @@ public class RelatorioService
         _estoque = estoque;
     }
 
-    // TODO: por produto, no período: total de entradas, de saídas, de ajustes e o estoque atual.
-    // Filtro opcional por categoria e ordenação por maior consumo (saídas). O dia final entra inteiro.
+    // Uma linha por produto que teve movimentação no período. Filtro opcional por categoria.
+    // Ordenado por maior consumo (saídas) e, em empate, por nome.
     public List<ItemRelatorioConsumo> GerarRelatorioConsumo(DateTime inicio, DateTime fim, Categoria? categoria = null)
     {
-        throw new NotImplementedException("TODO: RelatorioService.GerarRelatorioConsumo");
+        var movimentacoes = ObterAtivasNoPeriodo(inicio, fim);
+
+        if (categoria is not null)
+            movimentacoes = movimentacoes.Where(m => m.Produto.Categoria == categoria).ToList();
+
+        return movimentacoes
+            .GroupBy(m => m.Produto)
+            .Select(grupo => new ItemRelatorioConsumo
+            {
+                Produto = grupo.Key,
+                TotalEntradas = SomarQuantidades(grupo, TipoMovimentacao.Entrada),
+                TotalSaidas = SomarQuantidades(grupo, TipoMovimentacao.Saida),
+                TotalAjustes = SomarQuantidades(grupo, TipoMovimentacao.AjusteBalanco), // soma das diferenças, com sinal
+                EstoqueAtual = grupo.Key.Quantidade
+            })
+            .OrderByDescending(item => item.TotalSaidas)
+            .ThenBy(item => item.Produto.Nome, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
     }
 
-    // TODO: entradas do período.
-    public List<Movimentacao> ObterEntradas(DateTime inicio, DateTime fim)
-    {
-        throw new NotImplementedException("TODO: RelatorioService.ObterEntradas");
-    }
+    // Entradas do período, da mais recente para a mais antiga.
+    public List<Movimentacao> ObterEntradas(DateTime inicio, DateTime fim) =>
+        ObterAtivasDoTipo(inicio, fim, TipoMovimentacao.Entrada);
 
-    // TODO: saídas do período.
-    public List<Movimentacao> ObterSaidas(DateTime inicio, DateTime fim)
-    {
-        throw new NotImplementedException("TODO: RelatorioService.ObterSaidas");
-    }
+    // Saídas do período, da mais recente para a mais antiga.
+    public List<Movimentacao> ObterSaidas(DateTime inicio, DateTime fim) =>
+        ObterAtivasDoTipo(inicio, fim, TipoMovimentacao.Saida);
 
-    // TODO: estoque disponível hoje (produto e quantidade).
-    public List<Produto> ObterEstoqueDisponivel()
-    {
-        throw new NotImplementedException("TODO: RelatorioService.ObterEstoqueDisponivel");
-    }
+    // Estoque disponível hoje: produtos ativos com quantidade maior que zero, por nome.
+    public List<Produto> ObterEstoqueDisponivel() =>
+        OrdenarPorNome(_dados.Produtos.Where(p => p.Ativo && p.Quantidade > 0));
 
-    // TODO: produtos com estoque baixo (use EstoqueService.EstaAbaixoDoMinimo).
-    public List<Produto> ObterProdutosComEstoqueBaixo()
-    {
-        throw new NotImplementedException("TODO: RelatorioService.ObterProdutosComEstoqueBaixo");
-    }
+    // A regra de estoque baixo é do EstoqueService.
+    public List<Produto> ObterProdutosComEstoqueBaixo() =>
+        OrdenarPorNome(_dados.Produtos.Where(p => p.Ativo && _estoque.EstaAbaixoDoMinimo(p)));
 
-    // TODO: produtos próximos da validade (use EstoqueService.TemValidadeProxima).
+    // A regra de validade próxima é do EstoqueService (aqui só se informa a data de hoje).
     public List<Produto> ObterProdutosProximosDaValidade()
     {
-        throw new NotImplementedException("TODO: RelatorioService.ObterProdutosProximosDaValidade");
+        var hoje = DateOnly.FromDateTime(DateTime.Today);
+        return OrdenarPorNome(_dados.Produtos.Where(p => p.Ativo && _estoque.TemValidadeProxima(p, hoje)));
     }
+
+    // ---------- Apoio (privados) ----------
+
+    // Movimentações ATIVAS do período (mesmas regras do FiltrarPorPeriodo: início depois do fim é erro
+    // e o dia final entra inteiro). Corrigidas e canceladas ficam de fora.
+    private List<Movimentacao> ObterAtivasNoPeriodo(DateTime inicio, DateTime fim)
+    {
+        if (inicio > fim)
+            throw new InvalidOperationException("A data inicial não pode ser depois da data final.");
+
+        var limite = fim.Date.AddDays(1).AddTicks(-1);
+
+        return _dados.Movimentacoes
+            .Where(m => m.Status == StatusMovimentacao.Ativa && m.Data >= inicio && m.Data <= limite)
+            .ToList();
+    }
+
+    private List<Movimentacao> ObterAtivasDoTipo(DateTime inicio, DateTime fim, TipoMovimentacao tipo) =>
+        ObterAtivasNoPeriodo(inicio, fim)
+            .Where(m => m.Tipo == tipo)
+            .OrderByDescending(m => m.Data)
+            .ToList();
+
+    private static int SomarQuantidades(IEnumerable<Movimentacao> movimentacoes, TipoMovimentacao tipo) =>
+        movimentacoes.Where(m => m.Tipo == tipo).Sum(m => m.Quantidade);
+
+    private static List<Produto> OrdenarPorNome(IEnumerable<Produto> produtos) =>
+        produtos.OrderBy(p => p.Nome, StringComparer.CurrentCultureIgnoreCase).ToList();
 }

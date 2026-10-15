@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+		<RootNamespace>SigaCean.Tests</RootNamespace>
+	</PropertyGroup>
+
+	<!-- Os testes compilam DIRETO os arquivos do aplicativo (sem referenciar o projeto MAUI).
+	     Só Models, Data e Services entram: nada de telas, nada de MAUI. -->
+	<ItemGroup>
+		<Compile Include="..\Models\**\*.cs" LinkBase="Models" />
+		<Compile Include="..\Data\**\*.cs" LinkBase="Data" />
+		<Compile Include="..\Services\**\*.cs" LinkBase="Services" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+		<PackageReference Include="xunit" Version="2.9.3" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Xunit" />
+	</ItemGroup>
+
+</Project>

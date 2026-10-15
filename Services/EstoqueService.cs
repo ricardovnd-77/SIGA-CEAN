@@ -52,28 +52,105 @@ public class EstoqueService
         produto.Saldos.Any(s => s.Quantidade > 0 && s.DataValidade is not null &&
                                 s.DataValidade.Value.DayNumber - hoje.DayNumber <= DiasAlertaValidade);
 
-    // ---------- Alterar a quantidade (a fazer) ----------
-    // Só o MovimentacaoService deve chamar estes métodos. Regra geral: se algo for inválido, lançar
-    // InvalidOperationException ANTES de alterar qualquer coisa (nada pode mudar pela metade).
+    // ---------- Alterar a quantidade ----------
+    // Só o MovimentacaoService deve chamar estes métodos. Regra geral: se algo for inválido, lança
+    // InvalidOperationException ANTES de alterar qualquer coisa (nada muda pela metade).
 
-    // TODO: somar a quantidade ao saldo da mesma validade (cria o saldo se não existir). quantidade > 0.
+    // Soma a quantidade ao saldo da MESMA validade; se não existir, cria o saldo.
+    // Duas entradas sem validade (null) também caem no mesmo saldo.
     public void AumentarEstoque(Produto produto, int quantidade, DateOnly? dataValidade)
     {
-        throw new NotImplementedException("TODO: EstoqueService.AumentarEstoque");
+        ValidarQuantidadePositiva(quantidade);
+
+        var saldo = BuscarSaldo(produto, dataValidade);
+        if (saldo is null)
+            produto.Saldos.Add(new SaldoValidade { DataValidade = dataValidade, Quantidade = quantidade });
+        else
+            saldo.Quantidade += quantidade;
     }
 
-    // TODO: retirar a quantidade pelo critério FEFO (primeiro a vencer, primeiro a sair; sem validade sai por último).
-    // Recusar se quantidade <= 0 ou se for maior que produto.Quantidade (o estoque NUNCA fica negativo).
-    // Devolver de quais saldos saiu, para o MovimentacaoService guardar na movimentação (cancelamento usa isso).
-    // Remover da lista os saldos que ficarem zerados.
+    // Retira a quantidade pelo critério FEFO (primeiro a vencer, primeiro a sair; sem validade sai por último).
+    // Devolve de quais validades saiu, como objetos NOVOS (o MovimentacaoService guarda isso para o cancelamento).
     public List<SaldoValidade> DiminuirEstoque(Produto produto, int quantidade)
     {
-        throw new NotImplementedException("TODO: EstoqueService.DiminuirEstoque");
+        // Valida tudo ANTES de mexer nos saldos: o estoque nunca fica negativo nem muda pela metade.
+        ValidarQuantidadePositiva(quantidade);
+        if (quantidade > produto.Quantidade)
+            throw new InvalidOperationException($"Estoque insuficiente. Quantidade disponível: {produto.Quantidade}.");
+
+        var retirados = new List<SaldoValidade>();
+        var faltaRetirar = quantidade;
+
+        foreach (var saldo in SaldosEmOrdemFefo(produto))
+        {
+            if (faltaRetirar == 0)
+                break;
+
+            var retirar = Math.Min(saldo.Quantidade, faltaRetirar);
+            saldo.Quantidade -= retirar;
+            faltaRetirar -= retirar;
+            retirados.Add(new SaldoValidade { DataValidade = saldo.DataValidade, Quantidade = retirar });
+        }
+
+        // Saldo zerado não fica na lista.
+        produto.Saldos.RemoveAll(s => s.Quantidade == 0);
+        return retirados;
     }
 
-    // TODO: ajustar o estoque para a quantidade apurada na contagem (>= 0). Usa Aumentar/Diminuir internamente.
-    public void AtualizarQuantidade(Produto produto, int quantidadeApurada)
+    // Ajusta o estoque para a quantidade contada (balanço). Se sobrou, entra SEM validade; se faltou, sai pelo FEFO.
+    // Devolve o que foi retirado (lista vazia se a diferença for zero ou positiva).
+    public List<SaldoValidade> AtualizarQuantidade(Produto produto, int quantidadeApurada)
     {
-        throw new NotImplementedException("TODO: EstoqueService.AtualizarQuantidade");
+        if (quantidadeApurada < 0)
+            throw new InvalidOperationException("A quantidade apurada não pode ser negativa.");
+
+        var diferenca = quantidadeApurada - produto.Quantidade;
+
+        if (diferenca > 0)
+        {
+            AumentarEstoque(produto, diferenca, null);
+            return new List<SaldoValidade>();
+        }
+
+        if (diferenca < 0)
+            return DiminuirEstoque(produto, -diferenca);
+
+        return new List<SaldoValidade>();
     }
+
+    // Desfaz uma ENTRADA (usado ao cancelar/corrigir): retira a quantidade do saldo daquela validade.
+    // Se o saldo não tem quantidade suficiente (parte do que entrou já foi usada), recusa e não altera nada.
+    public void DesfazerEntrada(Produto produto, int quantidade, DateOnly? dataValidade)
+    {
+        ValidarQuantidadePositiva(quantidade);
+
+        var saldo = BuscarSaldo(produto, dataValidade);
+        if (saldo is null || saldo.Quantidade < quantidade)
+            throw new InvalidOperationException(
+                "Não é possível desfazer esta entrada, pois parte do que entrou já foi utilizada.");
+
+        saldo.Quantidade -= quantidade;
+        if (saldo.Quantidade == 0)
+            produto.Saldos.Remove(saldo);
+    }
+
+    // ---------- Apoio (privados) ----------
+
+    private static void ValidarQuantidadePositiva(int quantidade)
+    {
+        if (quantidade <= 0)
+            throw new InvalidOperationException("A quantidade deve ser maior que zero.");
+    }
+
+    // Saldo com a mesma validade (null = sem validade).
+    private static SaldoValidade? BuscarSaldo(Produto produto, DateOnly? dataValidade) =>
+        produto.Saldos.FirstOrDefault(s => s.DataValidade == dataValidade);
+
+    // FEFO: validade mais próxima primeiro; o saldo sem validade vai por último.
+    private static List<SaldoValidade> SaldosEmOrdemFefo(Produto produto) =>
+        produto.Saldos
+            .Where(s => s.Quantidade > 0)
+            .OrderBy(s => s.DataValidade is null)
+            .ThenBy(s => s.DataValidade)
+            .ToList();
 }

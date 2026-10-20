@@ -1,19 +1,53 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:SigaCean.Views"
              x:Class="SigaCean.Views.RelatoriosPage"
              Title="Relatórios">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="28" Spacing="18">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Padding="28,24,28,12" RowSpacing="12">
 
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
             <Label Text="Relatórios" Style="{StaticResource PageTitle}" />
-            <Label Text="Consultas gerenciais do estoque." Style="{StaticResource PageSubtitle}" />
-
-            <!-- TODO: relatório de consumo por período, estoque baixo e validade próxima (RelatorioService) -->
-            <Label Text="Tela em construção." Style="{StaticResource MutedLabel}" />
-
+            <Label Text="Consumo por período, entradas, saídas e produtos que precisam de atenção." Style="{StaticResource PageSubtitle}" />
         </VerticalStackLayout>
-    </ScrollView>
+
+        <Grid Grid.Row="1" ColumnDefinitions="260,*" ColumnSpacing="10">
+            <Picker x:Name="RelatorioPicker" Grid.Column="0" Title="Relatório" SelectedIndexChanged="OnRelatorioChanged" />
+            <Picker x:Name="CategoriaPicker" Grid.Column="1" Title="Categoria" HorizontalOptions="Start" WidthRequest="220" SelectedIndexChanged="OnFiltroChanged" />
+        </Grid>
+
+        <HorizontalStackLayout x:Name="PeriodoPainel" Grid.Row="2" Spacing="12">
+            <Label Text="Período: de" VerticalOptions="Center" Style="{StaticResource MutedLabel}" />
+            <DatePicker x:Name="InicioPicker" DateSelected="OnFiltroDateChanged" />
+            <Label Text="até" VerticalOptions="Center" Style="{StaticResource MutedLabel}" />
+            <DatePicker x:Name="FimPicker" DateSelected="OnFiltroDateChanged" />
+        </HorizontalStackLayout>
+
+        <Label x:Name="ResumoLabel" Grid.Row="3" FontAttributes="Bold" />
+
+        <CollectionView x:Name="ListaRelatorio" Grid.Row="4" SelectionMode="None">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.EmptyView>
+                <Label Text="Nada para mostrar neste relatório." Style="{StaticResource MutedLabel}" Margin="4,20" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="views:LinhaRelatorio">
+                    <Border Padding="18,12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                <Label Text="{Binding Titulo}" FontAttributes="Bold" FontSize="15" />
+                                <Label Text="{Binding Detalhe}" IsVisible="{Binding MostrarDetalhe}" Style="{StaticResource MutedLabel}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding Destaque}" TextColor="{Binding CorDestaque}" FontAttributes="Bold" FontSize="18" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </Grid>
 
 </ContentPage>

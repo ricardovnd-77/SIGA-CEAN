@@ -1,19 +1,67 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:SigaCean.Views"
              x:Class="SigaCean.Views.EstoquePage"
              Title="Estoque">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="28" Spacing="18">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="28,24,28,12" RowSpacing="12">
 
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
             <Label Text="Estoque" Style="{StaticResource PageTitle}" />
-            <Label Text="Consulte a situação atual dos produtos." Style="{StaticResource PageSubtitle}" />
-
-            <!-- TODO: lista de produtos com categoria, quantidade, mínimo, validade e situação; busca e filtros (EstoqueService e ProdutoService) -->
-            <Label Text="Tela em construção." Style="{StaticResource MutedLabel}" />
-
+            <Label Text="Consulte a quantidade, a validade e a situação de cada produto." Style="{StaticResource PageSubtitle}" />
         </VerticalStackLayout>
-    </ScrollView>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,200,210" ColumnSpacing="10">
+            <Entry x:Name="BuscaEntry" Grid.Column="0" Placeholder="Buscar por nome do produto" TextChanged="OnFiltroChanged" />
+            <Picker x:Name="CategoriaPicker" Grid.Column="1" Title="Categoria" SelectedIndexChanged="OnFiltroChanged" />
+            <Picker x:Name="SituacaoPicker" Grid.Column="2" Title="Situação" SelectedIndexChanged="OnFiltroChanged" />
+        </Grid>
+
+        <Label x:Name="ResumoLabel" Grid.Row="2" Style="{StaticResource MutedLabel}" />
+
+        <CollectionView x:Name="ListaProdutos" Grid.Row="3" SelectionMode="None">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.EmptyView>
+                <Label Text="Nada para mostrar." Style="{StaticResource MutedLabel}" Margin="4,20" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="views:ProdutoLinha">
+                    <Border Padding="18,14">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                <Label Text="{Binding Nome}" FontAttributes="Bold" FontSize="15" />
+                                <Label Text="{Binding Detalhe}" Style="{StaticResource MutedLabel}" />
+                                <Label Text="{Binding SaldosTexto}" IsVisible="{Binding MostrarSaldos}" Style="{StaticResource MutedLabel}" />
+                                <HorizontalStackLayout Spacing="6" Margin="0,4,0,0">
+                                    <Border Style="{StaticResource Selo}" BackgroundColor="#FBE5E5" IsVisible="{Binding SemEstoque}">
+                                        <Label Text="Sem estoque" Style="{StaticResource SeloTexto}" TextColor="{StaticResource Red}" />
+                                    </Border>
+                                    <Border Style="{StaticResource Selo}" BackgroundColor="#FDEFD8" IsVisible="{Binding AbaixoDoMinimo}">
+                                        <Label Text="Abaixo do mínimo" Style="{StaticResource SeloTexto}" TextColor="#B96F0A" />
+                                    </Border>
+                                    <Border Style="{StaticResource Selo}" BackgroundColor="#FBE5E5" IsVisible="{Binding Vencido}">
+                                        <Label Text="Validade vencida" Style="{StaticResource SeloTexto}" TextColor="{StaticResource Red}" />
+                                    </Border>
+                                    <Border Style="{StaticResource Selo}" BackgroundColor="#FDEFD8" IsVisible="{Binding ValidadeProxima}">
+                                        <Label Text="Vence em breve" Style="{StaticResource SeloTexto}" TextColor="#B96F0A" />
+                                    </Border>
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" HorizontalOptions="End" VerticalOptions="Center">
+                                <Label Text="{Binding Quantidade}" TextColor="{Binding CorQuantidade}" FontAttributes="Bold" FontSize="26" HorizontalOptions="End" />
+                                <Label Text="{Binding MinimoTexto}" IsVisible="{Binding MostrarMinimo}" Style="{StaticResource MutedLabel}" HorizontalOptions="End" />
+                                <Label Text="{Binding ValidadeTexto}" IsVisible="{Binding MostrarValidade}" TextColor="{Binding CorValidade}" FontSize="12" HorizontalOptions="End" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </Grid>
 
 </ContentPage>

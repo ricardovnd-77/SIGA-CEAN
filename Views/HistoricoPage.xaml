@@ -1,19 +1,69 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:SigaCean.Views"
              x:Class="SigaCean.Views.HistoricoPage"
              Title="Histórico">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="28" Spacing="18">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Padding="28,24,28,12" RowSpacing="12">
 
-            <Label Text="Histórico" Style="{StaticResource PageTitle}" />
-            <Label Text="Histórico de movimentações." Style="{StaticResource PageSubtitle}" />
-
-            <!-- TODO: lista de movimentações com busca e filtro por período; corrigir e cancelar (MovimentacaoService) -->
-            <Label Text="Tela em construção." Style="{StaticResource MutedLabel}" />
-
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
+            <Label Text="Histórico de movimentações" Style="{StaticResource PageTitle}" />
+            <Label Text="Entradas, saídas e ajustes. O que for corrigido ou cancelado continua aparecendo, com o motivo." Style="{StaticResource PageSubtitle}" />
         </VerticalStackLayout>
-    </ScrollView>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,170,200" ColumnSpacing="10">
+            <Entry x:Name="BuscaEntry" Grid.Column="0" Placeholder="Buscar por nome do produto" TextChanged="OnFiltroChanged" />
+            <Picker x:Name="TipoPicker" Grid.Column="1" Title="Tipo" SelectedIndexChanged="OnFiltroChanged" />
+            <Picker x:Name="StatusPicker" Grid.Column="2" Title="Situação" SelectedIndexChanged="OnFiltroChanged" />
+        </Grid>
+
+        <HorizontalStackLayout Grid.Row="2" Spacing="12">
+            <Label Text="Filtrar por período" VerticalOptions="Center" />
+            <Switch x:Name="PeriodoSwitch" Toggled="OnFiltroToggled" VerticalOptions="Center" />
+            <Label Text="de" VerticalOptions="Center" Style="{StaticResource MutedLabel}" IsVisible="{Binding Source={x:Reference PeriodoSwitch}, Path=IsToggled}" />
+            <DatePicker x:Name="InicioPicker" DateSelected="OnFiltroDateChanged" IsVisible="{Binding Source={x:Reference PeriodoSwitch}, Path=IsToggled}" />
+            <Label Text="até" VerticalOptions="Center" Style="{StaticResource MutedLabel}" IsVisible="{Binding Source={x:Reference PeriodoSwitch}, Path=IsToggled}" />
+            <DatePicker x:Name="FimPicker" DateSelected="OnFiltroDateChanged" IsVisible="{Binding Source={x:Reference PeriodoSwitch}, Path=IsToggled}" />
+        </HorizontalStackLayout>
+
+        <Label x:Name="ResumoLabel" Grid.Row="3" Style="{StaticResource MutedLabel}" />
+
+        <CollectionView x:Name="ListaMovimentacoes" Grid.Row="4" SelectionMode="None">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.EmptyView>
+                <Label Text="Nenhuma movimentação para mostrar." Style="{StaticResource MutedLabel}" Margin="4,20" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="views:MovimentacaoLinha">
+                    <Border Padding="18,14">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label Text="{Binding TipoTexto}" FontAttributes="Bold" TextColor="{StaticResource Primary}" FontSize="12" VerticalOptions="Center" />
+                                    <Label Text="{Binding DataTexto}" Style="{StaticResource MutedLabel}" VerticalOptions="Center" />
+                                    <Border Style="{StaticResource Selo}" BackgroundColor="#FDEFD8" IsVisible="{Binding MostrarStatus}">
+                                        <Label Text="{Binding StatusTexto}" Style="{StaticResource SeloTexto}" TextColor="{Binding CorStatus}" />
+                                    </Border>
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding Produto}" FontAttributes="Bold" FontSize="15" />
+                                <Label Text="{Binding Detalhes}" IsVisible="{Binding MostrarDetalhes}" Style="{StaticResource MutedLabel}" />
+                                <Label Text="{Binding Motivo}" IsVisible="{Binding MostrarMotivo}" FontSize="12" TextColor="{StaticResource Red}" />
+                                <HorizontalStackLayout Spacing="8" Margin="0,6,0,0" IsVisible="{Binding PodeEncerrar}">
+                                    <Button Text="Corrigir" Clicked="OnCorrigirClicked" />
+                                    <Button Text="Cancelar" Clicked="OnCancelarClicked" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+
+                            <Label Grid.Column="1" Text="{Binding QuantidadeTexto}" TextColor="{Binding CorQuantidade}" FontAttributes="Bold" FontSize="24" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </Grid>
 
 </ContentPage>

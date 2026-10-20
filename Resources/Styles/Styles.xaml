@@ -21,6 +21,18 @@
         <Setter Property="BackgroundColor" Value="{StaticResource CardBackground}" />
     </Style>
 
+    <!-- Selo pequeno de situação (ex.: "Sem estoque", "Vencido"). Só a cor de fundo muda em cada uso. -->
+    <Style TargetType="Border" x:Key="Selo">
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 10" />
+        <Setter Property="Padding" Value="9,3" />
+    </Style>
+
+    <Style TargetType="Label" x:Key="SeloTexto">
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+
     <Style TargetType="BoxView">
         <Setter Property="BackgroundColor" Value="{StaticResource Line}" />
     </Style>
@@ -100,7 +112,7 @@
 
     <Style TargetType="Editor">
         <Setter Property="TextColor" Value="{StaticResource Ink}" />
-        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BackgroundColor" Value="#E6F2F1" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
         <Setter Property="FontSize" Value="14" />
         <Setter Property="PlaceholderColor" Value="{StaticResource Muted}" />
@@ -110,7 +122,7 @@
 
     <Style TargetType="Entry">
         <Setter Property="TextColor" Value="{StaticResource Ink}" />
-        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BackgroundColor" Value="#E6F2F1" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
         <Setter Property="FontSize" Value="14" />
         <Setter Property="PlaceholderColor" Value="{StaticResource Muted}" />

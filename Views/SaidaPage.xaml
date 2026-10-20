@@ -5,13 +5,64 @@
              Title="Registrar Saída">
 
     <ScrollView>
-        <VerticalStackLayout Padding="28" Spacing="18">
+        <VerticalStackLayout Padding="28" Spacing="18" MaximumWidthRequest="820">
 
             <Label Text="Registrar Saída" Style="{StaticResource PageTitle}" />
-            <Label Text="Retire produtos do estoque." Style="{StaticResource PageSubtitle}" />
+            <Label Text="Retire produtos do estoque ou corrija a quantidade depois de uma contagem (ajuste de balanço)." Style="{StaticResource PageSubtitle}" />
 
-            <!-- TODO: formulário de saída: produto, quantidade, destino, quem retirou (MovimentacaoService) -->
-            <Label Text="Tela em construção." Style="{StaticResource MutedLabel}" />
+            <!-- Escolha entre os dois tipos de operação. -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Button x:Name="SaidaModoButton" Grid.Column="0" Text="Saída" Clicked="OnModoSaidaClicked" />
+                <Button x:Name="AjusteModoButton" Grid.Column="1" Text="Ajuste de balanço" Clicked="OnModoAjusteClicked" />
+            </Grid>
+
+            <Border Padding="22">
+                <VerticalStackLayout Spacing="16">
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Produto *" Style="{StaticResource FieldLabel}" />
+                        <Picker x:Name="ProdutoPicker" Title="Escolha o produto" SelectedIndexChanged="OnProdutoChanged" />
+                        <Label x:Name="DisponivelLabel" Style="{StaticResource MutedLabel}" />
+                    </VerticalStackLayout>
+
+                    <!-- Saída -->
+                    <VerticalStackLayout x:Name="SaidaPainel" Spacing="16">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                            <VerticalStackLayout Grid.Column="0" Spacing="6">
+                                <Label Text="Quantidade *" Style="{StaticResource FieldLabel}" />
+                                <Entry x:Name="QuantidadeEntry" Placeholder="Ex.: 5" Keyboard="Numeric" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                <Label Text="Destino *" Style="{StaticResource FieldLabel}" />
+                                <Entry x:Name="DestinoEntry" Placeholder="Ex.: Canil, Clínica" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Retirado por" Style="{StaticResource FieldLabel}" />
+                            <Entry x:Name="RetiradoPorEntry" Placeholder="Quem levou o produto (opcional)" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+
+                    <!-- Ajuste de balanço -->
+                    <VerticalStackLayout x:Name="AjustePainel" Spacing="16" IsVisible="False">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Quantidade contada *" Style="{StaticResource FieldLabel}" />
+                            <Entry x:Name="ApuradaEntry" Placeholder="Quantidade encontrada na contagem física" Keyboard="Numeric" TextChanged="OnApuradaChanged" />
+                            <Label x:Name="DiferencaLabel" Style="{StaticResource MutedLabel}" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Observação" Style="{StaticResource FieldLabel}" />
+                        <Entry x:Name="ObservacaoEntry" Placeholder="Opcional" Completed="OnRegistrarClicked" />
+                    </VerticalStackLayout>
+
+                    <Label x:Name="MensagemErroLabel" TextColor="{StaticResource Red}" IsVisible="False" />
+                    <Label x:Name="MensagemSucessoLabel" TextColor="{StaticResource Green}" FontAttributes="Bold" IsVisible="False" />
+
+                    <Button x:Name="RegistrarButton" Text="Registrar saída" Style="{StaticResource OrangeButton}" HorizontalOptions="Start" Clicked="OnRegistrarClicked" />
+                </VerticalStackLayout>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

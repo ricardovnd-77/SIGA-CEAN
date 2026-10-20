@@ -5,13 +5,67 @@
              Title="Registrar Entrada">
 
     <ScrollView>
-        <VerticalStackLayout Padding="28" Spacing="18">
+        <VerticalStackLayout Padding="28" Spacing="18" MaximumWidthRequest="820">
 
             <Label Text="Registrar Entrada" Style="{StaticResource PageTitle}" />
             <Label Text="Adicione produtos ao estoque." Style="{StaticResource PageSubtitle}" />
 
-            <!-- TODO: formulário de entrada: produto, quantidade, origem, AF/documento, validade (MovimentacaoService) -->
-            <Label Text="Tela em construção." Style="{StaticResource MutedLabel}" />
+            <Border Padding="22">
+                <VerticalStackLayout Spacing="16">
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Produto *" Style="{StaticResource FieldLabel}" />
+                        <Picker x:Name="ProdutoPicker" Title="Escolha o produto" SelectedIndexChanged="OnProdutoChanged" />
+                        <Label x:Name="EstoqueAtualLabel" Style="{StaticResource MutedLabel}" />
+                    </VerticalStackLayout>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                        <VerticalStackLayout Grid.Column="0" Spacing="6">
+                            <Label Text="Quantidade *" Style="{StaticResource FieldLabel}" />
+                            <Entry x:Name="QuantidadeEntry" Placeholder="Ex.: 10" Keyboard="Numeric" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="6">
+                            <Label Text="Origem *" Style="{StaticResource FieldLabel}" />
+                            <Picker x:Name="OrigemPicker" Title="Compra, concessão ou doação" SelectedIndexChanged="OnOrigemChanged" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Detalhe da origem" Style="{StaticResource FieldLabel}" />
+                        <Entry x:Name="OrigemDetalheEntry" Placeholder="Fornecedor, doador ou departamento (opcional)" />
+                    </VerticalStackLayout>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                        <VerticalStackLayout x:Name="AFPainel" Grid.Column="1" Spacing="6">
+                            <Label Text="Número da AF (compra)" Style="{StaticResource FieldLabel}" />
+                            <Entry x:Name="AFEntry" Placeholder="Opcional" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="0" Spacing="6">
+                            <Label Text="Documento" Style="{StaticResource FieldLabel}" />
+                            <Entry x:Name="DocumentoEntry" Placeholder="Nota fiscal, pedido ou documento (opcional)" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Validade" Style="{StaticResource FieldLabel}" />
+                        <HorizontalStackLayout Spacing="10">
+                            <Label Text="Este produto tem data de validade" VerticalOptions="Center" />
+                            <Switch x:Name="ValidadeSwitch" Toggled="OnValidadeToggled" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                        <DatePicker x:Name="ValidadePicker" IsVisible="False" HorizontalOptions="Start" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Observação" Style="{StaticResource FieldLabel}" />
+                        <Entry x:Name="ObservacaoEntry" Placeholder="Opcional" Completed="OnRegistrarClicked" />
+                    </VerticalStackLayout>
+
+                    <Label x:Name="MensagemErroLabel" TextColor="{StaticResource Red}" IsVisible="False" />
+                    <Label x:Name="MensagemSucessoLabel" TextColor="{StaticResource Green}" FontAttributes="Bold" IsVisible="False" />
+
+                    <Button Text="Registrar entrada" Style="{StaticResource GreenButton}" HorizontalOptions="Start" Clicked="OnRegistrarClicked" />
+                </VerticalStackLayout>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

@@ -90,8 +90,8 @@ mudar a assinatura de qualquer método.
 - Toda **regra nova** vai para um Service, nunca para o XAML ou o code-behind.
 - Use os estilos de `Resources/Styles` (`PageTitle`, `PrimaryButton`, `FieldLabel`...) para as telas ficarem iguais.
 - Mensagens ao usuário em português, claras, sem mostrar erro técnico.
-- Dados de exemplo (produtos e quantidades reais da planilha do CEAN) ainda não foram carregados. Podem entrar em uma
-  tarefa à parte, dentro de `Data`.
+- Dados de exemplo: ao abrir, o app já vem com os 134 produtos e as quantidades reais da planilha do CEAN, escritos em
+  `Data/DadosCean.cs` e carregados pelo `MauiProgram.cs` (sem movimentações, só saldo inicial; `new AppData()` continua vazio).
 
 ## Decisões de arquitetura (vindas da auditoria do projeto anterior)
 

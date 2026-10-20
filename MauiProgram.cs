@@ -61,7 +61,13 @@ public static class MauiProgram
 #endif
 
         // Os dados: UMA instância só, compartilhada por todos os Services (por isso Singleton).
-        builder.Services.AddSingleton<AppData>();
+        // O carregamento dos produtos do CEAN é feito aqui (e não no construtor do AppData, que deve começar vazio).
+        builder.Services.AddSingleton<AppData>(_ =>
+        {
+            var dados = new AppData();
+            DadosCean.Carregar(dados);
+            return dados;
+        });
 
         // Os Services. O MAUI entrega o AppData (e o EstoqueService) a quem pedir no construtor.
         // É o recurso básico do próprio MAUI; não há nenhum framework de injeção adicional.

@@ -61,11 +61,12 @@ public static class MauiProgram
 #endif
 
         // Os dados: UMA instância só, compartilhada por todos os Services (por isso Singleton).
-        // O carregamento dos produtos do CEAN é feito aqui (e não no construtor do AppData, que deve começar vazio).
+        // O carregamento dos produtos e do histórico do CEAN é feito aqui (e não no construtor do AppData, que deve começar vazio).
         builder.Services.AddSingleton<AppData>(_ =>
         {
             var dados = new AppData();
             DadosCean.Carregar(dados);
+            HistoricoCean.Carregar(dados); // só registro: não altera o estoque carregado acima
             return dados;
         });
 

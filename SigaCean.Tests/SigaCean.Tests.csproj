@@ -15,6 +15,7 @@
 		<Compile Include="..\Models\**\*.cs" LinkBase="Models" />
 		<Compile Include="..\Data\**\*.cs" LinkBase="Data" />
 		<Compile Include="..\Services\**\*.cs" LinkBase="Services" />
+		<Compile Include="..\Views\Rotulos.cs" LinkBase="Views" />
 	</ItemGroup>
 
 	<ItemGroup>

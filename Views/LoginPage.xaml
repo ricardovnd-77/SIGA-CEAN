@@ -20,7 +20,7 @@
 
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Senha" Style="{StaticResource FieldLabel}" />
-                    <Entry x:Name="SenhaEntry" Placeholder="Senha" IsPassword="True" />
+                    <Entry x:Name="SenhaEntry" Placeholder="Senha" IsPassword="True" Completed="OnEntrarClicked" />
                 </VerticalStackLayout>
 
                 <Label x:Name="MensagemErroLabel" TextColor="{StaticResource Red}" IsVisible="False" HorizontalOptions="Center" />

@@ -95,6 +95,24 @@
         <Setter Property="BorderColor" Value="{StaticResource Red}" />
     </Style>
 
+    <!-- Botões de filtro (chips): o escolhido fica preenchido, os demais só com contorno. -->
+    <Style TargetType="Button" x:Key="Chip">
+        <Setter Property="TextColor" Value="{StaticResource Primary}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource CardBackground}" />
+        <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="MinimumHeightRequest" Value="36" />
+    </Style>
+
+    <Style TargetType="Button" x:Key="ChipEscolhido" BasedOn="{StaticResource Chip}">
+        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+    </Style>
+
     <Style TargetType="CheckBox">
         <Setter Property="Color" Value="{StaticResource Primary}" />
         <Setter Property="MinimumHeightRequest" Value="44"/>

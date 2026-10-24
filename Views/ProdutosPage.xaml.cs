@@ -71,7 +71,24 @@ public partial class ProdutosPage : ContentPage
     {
         if (sender is not Button { BindingContext: ProdutoLinha linha }) return;
 
-        var produto = linha.Produto;
+        AbrirParaEdicao(linha.Produto);
+    }
+
+    // Outra tela (a ficha do produto) abre Produtos já editando este produto.
+    public void PreSelecionar(Guid produtoId)
+    {
+        try
+        {
+            AbrirParaEdicao(_produtos.ObterPorId(produtoId));
+        }
+        catch (InvalidOperationException)
+        {
+            // Produto não encontrado: a tela abre normalmente, sem formulário.
+        }
+    }
+
+    private void AbrirParaEdicao(Produto produto)
+    {
         _editandoId = produto.Id;
         FormularioTitulo.Text = $"Editar produto: {produto.Nome}";
         AvisoQuantidadeLabel.IsVisible = true;

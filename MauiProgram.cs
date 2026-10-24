@@ -83,6 +83,7 @@ public static class MauiProgram
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<DashboardPage>();
         builder.Services.AddTransient<EstoquePage>();
+        builder.Services.AddTransient<ProdutoDetalhePage>(); // a ficha do produto (aberta pelo Estoque; não está no menu)
         builder.Services.AddTransient<ProdutosPage>();
         builder.Services.AddTransient<EntradaPage>();
         builder.Services.AddTransient<SaidaPage>();

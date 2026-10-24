@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:SigaCean.Views"
+             x:Class="SigaCean.Views.ProdutoDetalhePage"
+             Title="Produto">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28" Spacing="18" MaximumWidthRequest="900">
+
+            <!-- O estilo global esconde o botão de voltar do Shell, por isso a ficha tem o seu. -->
+            <Button Text="←  Voltar" Style="{StaticResource PrimaryButton}" HorizontalOptions="Start" Clicked="OnVoltarClicked" />
+
+            <VerticalStackLayout Spacing="4">
+                <Label x:Name="NomeLabel" Style="{StaticResource PageTitle}" />
+                <Label x:Name="CategoriaLabel" Style="{StaticResource PageSubtitle}" />
+            </VerticalStackLayout>
+
+            <!-- Só o Administrativo vê estas ações; o Veterinário apenas consulta. -->
+            <HorizontalStackLayout x:Name="AcoesLayout" Spacing="10">
+                <Button Text="+ Entrada" Style="{StaticResource GreenButton}" Clicked="OnEntradaClicked" />
+                <Button Text="− Saída" Style="{StaticResource OrangeButton}" Clicked="OnSaidaClicked" />
+                <Button Text="Editar" Clicked="OnEditarClicked" />
+            </HorizontalStackLayout>
+
+            <!-- Situação: a quantidade, o mínimo e os selos. Tudo vem do ProdutoLinha (que pergunta ao EstoqueService). -->
+            <Border x:Name="SituacaoCard" x:DataType="views:ProdutoLinha" Padding="18">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Situação" Style="{StaticResource CardTitle}" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="24">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label Text="{Binding Quantidade}" TextColor="{Binding CorQuantidade}" FontSize="34" FontAttributes="Bold" />
+                            <Label Text="em estoque" Style="{StaticResource MutedLabel}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                            <Label x:Name="MinimoLabel" />
+                            <FlexLayout Wrap="Wrap">
+                                <Border Style="{StaticResource Selo}" BackgroundColor="#FBE5E5" IsVisible="{Binding SemEstoque}" Margin="0,0,6,6">
+                                    <Label Text="Sem estoque" Style="{StaticResource SeloTexto}" TextColor="{StaticResource Red}" />
+                                </Border>
+                                <Border Style="{StaticResource Selo}" BackgroundColor="#FDEFD8" IsVisible="{Binding AbaixoDoMinimo}" Margin="0,0,6,6">
+                                    <Label Text="Abaixo do mínimo" Style="{StaticResource SeloTexto}" TextColor="#B96F0A" />
+                                </Border>
+                                <Border Style="{StaticResource Selo}" BackgroundColor="#FBE5E5" IsVisible="{Binding Vencido}" Margin="0,0,6,6">
+                                    <Label Text="Validade vencida" Style="{StaticResource SeloTexto}" TextColor="{StaticResource Red}" />
+                                </Border>
+                                <Border Style="{StaticResource Selo}" BackgroundColor="#FDEFD8" IsVisible="{Binding ValidadeProxima}" Margin="0,0,6,6">
+                                    <Label Text="Vence em breve" Style="{StaticResource SeloTexto}" TextColor="#B96F0A" />
+                                </Border>
+                            </FlexLayout>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Saldos por validade, na ordem em que saem do estoque (FEFO). -->
+            <Border Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Saldos por validade" Style="{StaticResource CardTitle}" />
+                    <Label Text="Na ordem em que saem do estoque: o que vence primeiro sai primeiro; o que não tem validade sai por último."
+                           Style="{StaticResource MutedLabel}" />
+                    <Label x:Name="SemSaldosLabel" Text="Este produto não tem nada em estoque." Style="{StaticResource MutedLabel}" IsVisible="False" />
+                    <VerticalStackLayout x:Name="SaldosLista" Spacing="6">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="views:SaldoLinha">
+                                <Grid ColumnDefinitions="36,*,Auto" ColumnSpacing="10" Padding="0,6">
+                                    <Label Grid.Column="0" Text="{Binding OrdemTexto}" Style="{StaticResource MutedLabel}" VerticalOptions="Center" />
+                                    <Label Grid.Column="1" Text="{Binding ValidadeTexto}" FontAttributes="Bold" VerticalOptions="Center" />
+                                    <Label Grid.Column="2" Text="{Binding QuantidadeTexto}" FontAttributes="Bold" FontSize="16" VerticalOptions="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- As últimas 10 movimentações deste produto. -->
+            <Border Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Últimas movimentações" Style="{StaticResource CardTitle}" />
+                    <Label x:Name="SemMovimentacoesLabel" Text="Este produto ainda não tem movimentações." Style="{StaticResource MutedLabel}" IsVisible="False" />
+                    <VerticalStackLayout x:Name="MovimentacoesLista" Spacing="8">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="views:MovimentacaoLinha">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14" Padding="0,4">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Label Text="{Binding TipoTexto}" FontAttributes="Bold" TextColor="{StaticResource Primary}" FontSize="12" />
+                                            <Label Text="{Binding DataTexto}" Style="{StaticResource MutedLabel}" />
+                                            <Label Text="{Binding StatusTexto}" IsVisible="{Binding MostrarStatus}" TextColor="{Binding CorStatus}" FontSize="12" FontAttributes="Bold" />
+                                        </HorizontalStackLayout>
+                                        <Label Text="{Binding Detalhes}" IsVisible="{Binding MostrarDetalhes}" Style="{StaticResource MutedLabel}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="{Binding QuantidadeTexto}" TextColor="{Binding CorQuantidade}" FontAttributes="Bold" FontSize="18" VerticalOptions="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

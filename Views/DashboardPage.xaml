@@ -3,38 +3,60 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:SigaCean.Views"
              x:Class="SigaCean.Views.DashboardPage"
-             Title="Dashboard">
+             Title="Painel">
 
     <ScrollView>
         <VerticalStackLayout Padding="28" Spacing="18">
 
-            <Label Text="Dashboard" Style="{StaticResource PageTitle}" />
-            <Label Text="O que precisa de atenção no estoque hoje." Style="{StaticResource PageSubtitle}" />
+            <Label Text="Painel" Style="{StaticResource PageTitle}" />
+            <Label Text="O que precisa de atenção no estoque hoje. Clique em um quadro para ver os produtos." Style="{StaticResource PageSubtitle}" />
 
-            <!-- Indicadores: os números vêm do EstoqueService. -->
+            <!-- Atalhos para registrar uma entrada ou uma saída. -->
+            <HorizontalStackLayout Spacing="10">
+                <Button Text="+ Entrada" Style="{StaticResource GreenButton}" Clicked="OnEntradaClicked" />
+                <Button Text="− Saída" Style="{StaticResource OrangeButton}" Clicked="OnSaidaClicked" />
+            </HorizontalStackLayout>
+
+            <!-- Indicadores: os números vêm do EstoqueService. Clicar em um quadro abre o Estoque já filtrado. -->
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
                 <Border Grid.Column="0" Padding="16,14">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnQuadroTapped" CommandParameter="SemEstoque" />
+                    </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="2">
                         <Label Text="Sem estoque" Style="{StaticResource MutedLabel}" />
                         <Label x:Name="SemEstoqueLabel" Text="0" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource Red}" />
+                        <Label x:Name="SemEstoqueContagem" Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                 </Border>
                 <Border Grid.Column="1" Padding="16,14">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnQuadroTapped" CommandParameter="AbaixoDoMinimo" />
+                    </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="2">
                         <Label Text="Abaixo do mínimo" Style="{StaticResource MutedLabel}" />
                         <Label x:Name="AbaixoDoMinimoLabel" Text="0" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource Orange}" />
+                        <Label x:Name="AbaixoDoMinimoContagem" Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                 </Border>
                 <Border Grid.Column="2" Padding="16,14">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnQuadroTapped" CommandParameter="Vencidos" />
+                    </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="Validade vencida" Style="{StaticResource MutedLabel}" />
+                        <Label Text="Vencidos" Style="{StaticResource MutedLabel}" />
                         <Label x:Name="VencidosLabel" Text="0" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource Red}" />
+                        <Label x:Name="VencidosContagem" Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                 </Border>
                 <Border Grid.Column="3" Padding="16,14">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnQuadroTapped" CommandParameter="ValidadeProxima" />
+                    </Border.GestureRecognizers>
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="Vencendo em breve" Style="{StaticResource MutedLabel}" />
+                        <Label Text="Validade próxima" Style="{StaticResource MutedLabel}" />
                         <Label x:Name="ProximosLabel" Text="0" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource Orange}" />
+                        <Label x:Name="ProximosContagem" Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                 </Border>
             </Grid>
@@ -77,7 +99,10 @@
             </VerticalStackLayout>
 
             <!-- Movimentações recentes -->
-            <Label Text="Últimas movimentações" Style="{StaticResource CardTitle}" Margin="0,8,0,0" />
+            <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                <Label Grid.Column="0" Text="Últimas movimentações" Style="{StaticResource CardTitle}" VerticalOptions="Center" />
+                <Button Grid.Column="1" Text="Ver todas" Clicked="OnVerTodasClicked" Padding="12,4" MinimumHeightRequest="32" />
+            </Grid>
             <Label x:Name="MovimentacoesVazioLabel" Text="Nenhuma movimentação registrada ainda." Style="{StaticResource MutedLabel}" IsVisible="False" />
             <VerticalStackLayout x:Name="MovimentacoesLista" Spacing="8">
                 <BindableLayout.ItemTemplate>

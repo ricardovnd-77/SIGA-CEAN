@@ -5,22 +5,24 @@
              x:Class="SigaCean.Views.EstoquePage"
              Title="Estoque">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="28,24,28,12" RowSpacing="12">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Padding="28,24,28,12" RowSpacing="12">
 
         <VerticalStackLayout Grid.Row="0" Spacing="4">
             <Label Text="Estoque" Style="{StaticResource PageTitle}" />
-            <Label Text="Consulte a quantidade, a validade e a situação de cada produto." Style="{StaticResource PageSubtitle}" />
+            <Label Text="Consulte a quantidade, a validade e a situação de cada produto. Clique em um produto para ver a ficha." Style="{StaticResource PageSubtitle}" />
         </VerticalStackLayout>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,200,210" ColumnSpacing="10">
+        <Grid Grid.Row="1" ColumnDefinitions="*,220" ColumnSpacing="10">
             <Entry x:Name="BuscaEntry" Grid.Column="0" Placeholder="Buscar por nome do produto" TextChanged="OnFiltroChanged" />
             <Picker x:Name="CategoriaPicker" Grid.Column="1" Title="Categoria" SelectedIndexChanged="OnFiltroChanged" />
-            <Picker x:Name="SituacaoPicker" Grid.Column="2" Title="Situação" SelectedIndexChanged="OnFiltroChanged" />
         </Grid>
 
-        <Label x:Name="ResumoLabel" Grid.Row="2" Style="{StaticResource MutedLabel}" />
+        <!-- Filtro por situação: um botão (chip) para cada; o escolhido fica preenchido. Os botões são criados no code-behind. -->
+        <FlexLayout x:Name="SituacaoChips" Grid.Row="2" Wrap="Wrap" JustifyContent="Start" Margin="-3,0,0,0" />
 
-        <CollectionView x:Name="ListaProdutos" Grid.Row="3" SelectionMode="None">
+        <Label x:Name="ResumoLabel" Grid.Row="3" Style="{StaticResource MutedLabel}" />
+
+        <CollectionView x:Name="ListaProdutos" Grid.Row="4" SelectionMode="None">
             <CollectionView.ItemsLayout>
                 <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
             </CollectionView.ItemsLayout>
@@ -30,6 +32,9 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="views:ProdutoLinha">
                     <Border Padding="18,14">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnProdutoTapped" />
+                        </Border.GestureRecognizers>
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                             <VerticalStackLayout Grid.Column="0" Spacing="4">
                                 <Label Text="{Binding Nome}" FontAttributes="Bold" FontSize="15" />

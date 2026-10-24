@@ -8,4 +8,5 @@ public class ItemRelatorioConsumo
     public int TotalSaidas { get; set; }
     public int TotalAjustes { get; set; } // soma das diferenças dos ajustes de balanço
     public int EstoqueAtual { get; set; }
+    public decimal MediaMensalSaidas { get; set; } // saídas do período divididas pelos meses que ele cobre (1 casa decimal)
 }

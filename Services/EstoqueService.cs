@@ -71,14 +71,17 @@ public class EstoqueService
 
     // Retira a quantidade pelo critério FEFO (primeiro a vencer, primeiro a sair; sem validade sai por último).
     // Devolve de quais validades saiu, como objetos NOVOS (o MovimentacaoService guarda isso para o cancelamento).
-    public List<SaldoValidade> DiminuirEstoque(Produto produto, int quantidade)
+
+    // PREVISÃO do FEFO: de quais validades a quantidade sairia (a que vence primeiro, depois as seguintes; sem validade
+    // por último). NÃO altera nada. É o ÚNICO lugar onde o FEFO é decidido: o DiminuirEstoque usa esta previsão.
+    // Recusa quantidade <= 0 e quantidade maior que o estoque (mesmas regras da saída). Devolve objetos NOVOS.
+    public List<SaldoValidade> PrevisaoFefo(Produto produto, int quantidade)
     {
-        // Valida tudo ANTES de mexer nos saldos: o estoque nunca fica negativo nem muda pela metade.
         ValidarQuantidadePositiva(quantidade);
         if (quantidade > produto.Quantidade)
             throw new InvalidOperationException($"Estoque insuficiente. Quantidade disponível: {produto.Quantidade}.");
 
-        var retirados = new List<SaldoValidade>();
+        var previstos = new List<SaldoValidade>();
         var faltaRetirar = quantidade;
 
         foreach (var saldo in SaldosEmOrdemFefo(produto))
@@ -87,15 +90,28 @@ public class EstoqueService
                 break;
 
             var retirar = Math.Min(saldo.Quantidade, faltaRetirar);
-            saldo.Quantidade -= retirar;
             faltaRetirar -= retirar;
-            retirados.Add(new SaldoValidade { DataValidade = saldo.DataValidade, Quantidade = retirar });
+            previstos.Add(new SaldoValidade { DataValidade = saldo.DataValidade, Quantidade = retirar });
         }
+
+        return previstos;
+    }
+
+    // Retira a quantidade pelo critério FEFO (primeiro a vencer, primeiro a sair; sem validade sai por último).
+    // Devolve de quais validades saiu, como objetos NOVOS (o MovimentacaoService guarda isso para o cancelamento).
+    public List<SaldoValidade> DiminuirEstoque(Produto produto, int quantidade)
+    {
+        // A previsão valida tudo ANTES de mexer nos saldos: o estoque nunca fica negativo nem muda pela metade.
+        var retirados = PrevisaoFefo(produto, quantidade);
+
+        foreach (var retirado in retirados)
+            BuscarSaldo(produto, retirado.DataValidade)!.Quantidade -= retirado.Quantidade;
 
         // Saldo zerado não fica na lista.
         produto.Saldos.RemoveAll(s => s.Quantidade == 0);
         return retirados;
     }
+
 
     // Ajusta o estoque para a quantidade contada (balanço). Se sobrou, entra SEM validade; se faltou, sai pelo FEFO.
     // Devolve o que foi retirado (lista vazia se a diferença for zero ou positiva).

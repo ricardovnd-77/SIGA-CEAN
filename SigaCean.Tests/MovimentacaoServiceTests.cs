@@ -14,7 +14,7 @@ public class MovimentacaoServiceTests
             null, null, null, validade, null);
 
     private Movimentacao Sair(Produto produto, int quantidade) =>
-        _c.Movimentacoes.RegistrarSaida(produto, quantidade, "Canil", null, null);
+        _c.Movimentacoes.RegistrarSaida(produto, quantidade, "Canil", "Funcionário", null);
 
     // ---------- Entrada ----------
 
@@ -89,14 +89,33 @@ public class MovimentacaoServiceTests
         Assert.Equal(3, mov.SaldosConsumidos[1].Quantidade);
     }
 
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Saida_Sem_Retirado_Por_E_Recusada_E_Nada_Muda(string? retiradoPor)
+    {
+        var produto = _c.NovoProdutoComEstoque(5, Venc1);
+        var antes = Cenario.Foto(produto);
+
+        var erro = Assert.Throws<InvalidOperationException>(() =>
+            _c.Movimentacoes.RegistrarSaida(produto, 1, "Canil", retiradoPor, null));
+
+        Assert.Equal("Informe quem está retirando o produto.", erro.Message);
+        Assert.Equal(antes, Cenario.Foto(produto));
+        Assert.Equal(5, produto.Quantidade);
+        Assert.Empty(_c.Dados.Movimentacoes);
+    }
+
     [Fact]
-    public void Saida_Sem_Retirado_Por_E_Permitida()
+    public void Saida_Guarda_O_Retirado_Por_Sem_Espacos_Nas_Pontas()
     {
         var produto = _c.NovoProdutoComEstoque(5);
 
-        var mov = _c.Movimentacoes.RegistrarSaida(produto, 1, "Canil", "  ", null);
+        var mov = _c.Movimentacoes.RegistrarSaida(produto, 1, "Canil", "  Maria  ", null);
 
-        Assert.Null(mov.RetiradoPor);
+        Assert.Equal("Maria", mov.RetiradoPor);
     }
 
     [Fact]
@@ -120,7 +139,7 @@ public class MovimentacaoServiceTests
         var produto = _c.NovoProdutoComEstoque(5);
 
         Assert.Throws<InvalidOperationException>(() =>
-            _c.Movimentacoes.RegistrarSaida(produto, 1, destino, null, null));
+            _c.Movimentacoes.RegistrarSaida(produto, 1, destino, "João", null));
 
         Assert.Equal(5, produto.Quantidade);
         Assert.Empty(_c.Dados.Movimentacoes);
@@ -450,5 +469,79 @@ public class MovimentacaoServiceTests
         Assert.Contains(ativa, periodo);
         Assert.Equal(StatusMovimentacao.Cancelada, cancelada.Status);
         Assert.Equal(StatusMovimentacao.Corrigida, corrigida.Status);
+    }
+
+    // ---------- Previsão de saída (FEFO sem efeito colateral) ----------
+
+    [Fact]
+    public void Previsao_De_Saida_Mostra_De_Onde_Sairia_E_Nao_Altera_Estoque_Nem_Historico()
+    {
+        var produto = _c.NovoProduto();
+        Entrar(produto, 10, Venc2);
+        Entrar(produto, 5, Venc1);
+        var antes = Cenario.Foto(produto);
+        var movimentacoesAntes = _c.Dados.Movimentacoes.Count;
+
+        var previsao = _c.Movimentacoes.PrevisaoDeSaida(produto, 8);
+
+        Assert.Equal(2, previsao.Count);
+        Assert.Equal(Venc1, previsao[0].DataValidade);
+        Assert.Equal(5, previsao[0].Quantidade);
+        Assert.Equal(Venc2, previsao[1].DataValidade);
+        Assert.Equal(3, previsao[1].Quantidade);
+        Assert.Equal(antes, Cenario.Foto(produto));
+        Assert.Equal(15, produto.Quantidade);
+        Assert.Equal(movimentacoesAntes, _c.Dados.Movimentacoes.Count);
+    }
+
+    [Fact]
+    public void Previsao_De_Saida_E_Igual_Ao_Que_A_Saida_Real_Retira()
+    {
+        var produto = _c.NovoProduto();
+        Entrar(produto, 10, Venc2);
+        Entrar(produto, 5, Venc1);
+        Entrar(produto, 4, null);
+
+        var previsao = _c.Movimentacoes.PrevisaoDeSaida(produto, 17);
+        var mov = _c.Movimentacoes.RegistrarSaida(produto, 17, "Canil", "João", null);
+
+        Assert.Equal(previsao.Count, mov.SaldosConsumidos.Count);
+        for (var i = 0; i < previsao.Count; i++)
+        {
+            Assert.Equal(previsao[i].DataValidade, mov.SaldosConsumidos[i].DataValidade);
+            Assert.Equal(previsao[i].Quantidade, mov.SaldosConsumidos[i].Quantidade);
+        }
+    }
+
+    [Fact]
+    public void Previsao_De_Saida_Maior_Que_O_Estoque_E_Recusada_E_Nada_Muda()
+    {
+        var produto = _c.NovoProdutoComEstoque(5, Venc1);
+        var antes = Cenario.Foto(produto);
+
+        Assert.Throws<InvalidOperationException>(() => _c.Movimentacoes.PrevisaoDeSaida(produto, 6));
+
+        Assert.Equal(antes, Cenario.Foto(produto));
+        Assert.Empty(_c.Dados.Movimentacoes);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-3)]
+    public void Previsao_De_Saida_Com_Quantidade_Zero_Ou_Negativa_E_Recusada(int quantidade)
+    {
+        var produto = _c.NovoProdutoComEstoque(5);
+
+        Assert.Throws<InvalidOperationException>(() => _c.Movimentacoes.PrevisaoDeSaida(produto, quantidade));
+        Assert.Equal(5, produto.Quantidade);
+    }
+
+    [Fact]
+    public void Previsao_De_Saida_Em_Produto_Inativo_E_Recusada()
+    {
+        var produto = _c.NovoProdutoComEstoque(5);
+        produto.Ativo = false;
+
+        Assert.Throws<InvalidOperationException>(() => _c.Movimentacoes.PrevisaoDeSaida(produto, 1));
     }
 }

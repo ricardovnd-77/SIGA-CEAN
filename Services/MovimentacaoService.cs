@@ -57,26 +57,38 @@ public class MovimentacaoService
         ValidarQuantidadePositiva(quantidade);
         if (string.IsNullOrWhiteSpace(destino))
             throw new InvalidOperationException("Informe o destino da saída.");
+        if (string.IsNullOrWhiteSpace(retiradoPor))
+            throw new InvalidOperationException("Informe quem está retirando o produto.");
         if (quantidade > produto.Quantidade)
             throw new InvalidOperationException($"Estoque insuficiente. Quantidade disponível: {produto.Quantidade}.");
 
         var retirados = _estoque.DiminuirEstoque(produto, quantidade);
 
         var movimentacao = new Movimentacao
-        {
+        { 
             Produto = produto,
             Tipo = TipoMovimentacao.Saida,
             Quantidade = quantidade,
             UsuarioResponsavel = responsavel,
             Observacao = LimparTexto(observacao),
             Destino = destino.Trim(),
-            RetiradoPor = LimparTexto(retiradoPor)
+            RetiradoPor = retiradoPor.Trim()
         };
         movimentacao.SaldosConsumidos.AddRange(retirados);
 
         _dados.Movimentacoes.Add(movimentacao);
         return movimentacao;
     }
+
+
+    // Mostra, SEM alterar nada, de quais validades uma saída retiraria a quantidade (FEFO). Quem decide o FEFO é o
+    // EstoqueService; aqui só se aplicam as regras comuns da saída (produto ativo) e se delega.
+    public List<SaldoValidade> PrevisaoDeSaida(Produto produto, int quantidade)
+    {
+        ValidarProdutoAtivo(produto);
+        return _estoque.PrevisaoFefo(produto, quantidade);
+    }
+
 
     // Ajuste de balanço (contagem física). Quantidade = DIFERENÇA aplicada (positiva se sobrou, negativa se faltou).
     // Mesmo sem diferença a movimentação é gravada: a conferência aconteceu.

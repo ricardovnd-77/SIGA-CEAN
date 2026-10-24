@@ -377,4 +377,105 @@ public class EstoqueServiceTests
 
         Assert.False(_c.Estoque.TemValidadeVencida(produto, Cenario.Hoje));
     }
+
+    // ---------- Previsão do FEFO ----------
+
+    [Fact]
+    public void Previsao_Fefo_Mostra_As_Validades_Em_Ordem_E_Nao_Altera_O_Estoque()
+    {
+        var produto = _c.NovoProduto();
+        _c.Estoque.AumentarEstoque(produto, 10, Venc2);
+        _c.Estoque.AumentarEstoque(produto, 5, Venc1);
+        var antes = Cenario.Foto(produto);
+
+        var previsao = _c.Estoque.PrevisaoFefo(produto, 8);
+
+        Assert.Equal(2, previsao.Count);
+        AssertSaldo(previsao[0], Venc1, 5);
+        AssertSaldo(previsao[1], Venc2, 3);
+        Assert.Equal(antes, Cenario.Foto(produto));
+        Assert.Equal(15, produto.Quantidade);
+    }
+
+    [Fact]
+    public void Previsao_Fefo_Deixa_O_Saldo_Sem_Validade_Por_Ultimo()
+    {
+        var produto = _c.NovoProduto();
+        _c.Estoque.AumentarEstoque(produto, 4, null);
+        _c.Estoque.AumentarEstoque(produto, 3, Venc1);
+
+        var previsao = _c.Estoque.PrevisaoFefo(produto, 5);
+
+        Assert.Equal(2, previsao.Count);
+        AssertSaldo(previsao[0], Venc1, 3);
+        AssertSaldo(previsao[1], null, 2);
+    }
+
+    [Fact]
+    public void Previsao_Fefo_Da_Quantidade_Toda_Devolve_Todos_Os_Saldos()
+    {
+        var produto = _c.NovoProduto();
+        _c.Estoque.AumentarEstoque(produto, 4, Venc2);
+        _c.Estoque.AumentarEstoque(produto, 3, Venc1);
+
+        var previsao = _c.Estoque.PrevisaoFefo(produto, 7);
+
+        Assert.Equal(7, previsao.Sum(s => s.Quantidade));
+        Assert.Equal(2, previsao.Count);
+        Assert.Equal(7, produto.Quantidade);
+    }
+
+    [Fact]
+    public void Previsao_Fefo_Maior_Que_O_Estoque_E_Recusada_E_Nada_Muda()
+    {
+        var produto = _c.NovoProduto();
+        _c.Estoque.AumentarEstoque(produto, 5, Venc1);
+        var antes = Cenario.Foto(produto);
+
+        var erro = Assert.Throws<InvalidOperationException>(() => _c.Estoque.PrevisaoFefo(produto, 6));
+
+        Assert.Contains("5", erro.Message);
+        Assert.Equal(antes, Cenario.Foto(produto));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Previsao_Fefo_Com_Quantidade_Zero_Ou_Negativa_E_Recusada(int quantidade)
+    {
+        var produto = _c.NovoProdutoComEstoque(5);
+
+        Assert.Throws<InvalidOperationException>(() => _c.Estoque.PrevisaoFefo(produto, quantidade));
+        Assert.Equal(5, produto.Quantidade);
+    }
+
+    [Fact]
+    public void Previsao_Fefo_Devolve_Objetos_Novos_Que_Nao_Mexem_No_Estoque_Se_Alterados()
+    {
+        var produto = _c.NovoProdutoComEstoque(5, Venc1);
+
+        var previsao = _c.Estoque.PrevisaoFefo(produto, 2);
+        previsao[0].Quantidade = 999;
+
+        Assert.Equal(5, produto.Quantidade);
+    }
+
+    [Fact]
+    public void Diminuir_Estoque_Retira_Exatamente_O_Que_A_Previsao_Mostrou()
+    {
+        var produto = _c.NovoProduto();
+        _c.Estoque.AumentarEstoque(produto, 10, Venc2);
+        _c.Estoque.AumentarEstoque(produto, 5, Venc1);
+        _c.Estoque.AumentarEstoque(produto, 4, null);
+
+        var previsao = _c.Estoque.PrevisaoFefo(produto, 17);
+        var retirados = _c.Estoque.DiminuirEstoque(produto, 17);
+
+        Assert.Equal(previsao.Count, retirados.Count);
+        for (var i = 0; i < previsao.Count; i++)
+            AssertSaldo(retirados[i], previsao[i].DataValidade, previsao[i].Quantidade);
+
+        Assert.Equal(2, produto.Quantidade);
+        AssertSaldo(Assert.Single(produto.Saldos), null, 2);
+    }
 }

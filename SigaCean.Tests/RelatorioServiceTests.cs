@@ -218,4 +218,109 @@ public class RelatorioServiceTests
 
         Assert.Empty(_c.Relatorios.ObterProdutosProximosDaValidade());
     }
+
+    // ---------- Média mensal, ordem e última movimentação ----------
+
+    [Fact]
+    public void Consumo_Calcula_A_Media_Mensal_De_Saidas_Com_Uma_Casa_Decimal()
+    {
+        var produto = _c.NovoProduto();
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Saida, 10, DentroDoPeriodo);
+
+        var item = Assert.Single(_c.Relatorios.GerarRelatorioConsumo(Inicio, Fim));
+
+        // outubro tem 31 dias = 31 / 30,4375 meses; 10 / 1,0185 = 9,82 -> 9,8
+        Assert.Equal(9.8m, item.MediaMensalSaidas);
+    }
+
+    [Fact]
+    public void Media_Mensal_Em_Periodo_Anual_Divide_Pelos_Doze_Meses()
+    {
+        var produto = _c.NovoProduto();
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Saida, 24, new DateTime(2026, 3, 10));
+
+        var item = Assert.Single(_c.Relatorios.GerarRelatorioConsumo(new DateTime(2026, 1, 1), new DateTime(2026, 12, 31)));
+
+        Assert.Equal(2.0m, item.MediaMensalSaidas);
+    }
+
+    [Fact]
+    public void Media_Mensal_Em_Periodo_Menor_Que_Um_Mes_Conta_Como_Um_Mes()
+    {
+        var produto = _c.NovoProduto();
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Saida, 7, new DateTime(2026, 10, 5, 9, 0, 0));
+
+        var item = Assert.Single(_c.Relatorios.GerarRelatorioConsumo(new DateTime(2026, 10, 5), new DateTime(2026, 10, 5)));
+
+        Assert.Equal(7m, item.MediaMensalSaidas);
+    }
+
+    [Fact]
+    public void Media_Mensal_So_Considera_Saidas_Ativas()
+    {
+        var produto = _c.NovoProduto();
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Saida, 5, DentroDoPeriodo);
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Saida, 500, DentroDoPeriodo, StatusMovimentacao.Cancelada);
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Entrada, 900, DentroDoPeriodo);
+
+        var item = Assert.Single(_c.Relatorios.GerarRelatorioConsumo(Inicio, Fim));
+
+        Assert.Equal(4.9m, item.MediaMensalSaidas); // 5 / 1,0185 = 4,91
+    }
+
+    [Fact]
+    public void Consumo_Sem_Informar_A_Ordem_Continua_Por_Maior_Consumo_E_Depois_Nome()
+    {
+        var a = _c.NovoProduto("Aaa");
+        var b = _c.NovoProduto("Bbb");
+        var c = _c.NovoProduto("Ccc");
+        _c.AdicionarMovimentacao(a, TipoMovimentacao.Saida, 1, DentroDoPeriodo);
+        _c.AdicionarMovimentacao(b, TipoMovimentacao.Saida, 9, DentroDoPeriodo);
+        _c.AdicionarMovimentacao(c, TipoMovimentacao.Saida, 9, DentroDoPeriodo);
+
+        var padrao = _c.Relatorios.GerarRelatorioConsumo(Inicio, Fim).Select(i => i.Produto.Nome);
+        var explicita = _c.Relatorios.GerarRelatorioConsumo(Inicio, Fim, null, OrdemRelatorio.MaiorConsumo).Select(i => i.Produto.Nome);
+
+        Assert.Equal(new[] { "Bbb", "Ccc", "Aaa" }, padrao);
+        Assert.Equal(new[] { "Bbb", "Ccc", "Aaa" }, explicita);
+    }
+
+    [Fact]
+    public void Consumo_Ordenado_Por_Nome_Ignora_O_Consumo()
+    {
+        var zeta = _c.NovoProduto("Zeta");
+        var alfa = _c.NovoProduto("alfa");
+        var mega = _c.NovoProduto("Mega");
+        _c.AdicionarMovimentacao(zeta, TipoMovimentacao.Saida, 50, DentroDoPeriodo);
+        _c.AdicionarMovimentacao(alfa, TipoMovimentacao.Saida, 1, DentroDoPeriodo);
+        _c.AdicionarMovimentacao(mega, TipoMovimentacao.Saida, 20, DentroDoPeriodo);
+
+        var nomes = _c.Relatorios.GerarRelatorioConsumo(Inicio, Fim, null, OrdemRelatorio.PorNome).Select(i => i.Produto.Nome);
+
+        Assert.Equal(new[] { "alfa", "Mega", "Zeta" }, nomes);
+    }
+
+    [Fact]
+    public void Data_Da_Ultima_Movimentacao_E_Nula_Sem_Movimentacoes()
+    {
+        Assert.Null(_c.Relatorios.DataDaUltimaMovimentacao());
+    }
+
+    [Fact]
+    public void Data_Da_Ultima_Movimentacao_Considera_Qualquer_Status()
+    {
+        var produto = _c.NovoProduto();
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Saida, 1, new DateTime(2026, 5, 1));
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Saida, 1, new DateTime(2026, 9, 20, 14, 30, 0), StatusMovimentacao.Cancelada);
+        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Entrada, 1, new DateTime(2026, 7, 3));
+
+        Assert.Equal(new DateTime(2026, 9, 20, 14, 30, 0), _c.Relatorios.DataDaUltimaMovimentacao());
+    }
+
+    [Fact]
+    public void Consumo_Com_Datas_Invertidas_E_Recusado()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            _c.Relatorios.GerarRelatorioConsumo(Fim, Inicio, null, OrdemRelatorio.PorNome));
+    }
 }

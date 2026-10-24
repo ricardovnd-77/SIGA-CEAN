@@ -22,6 +22,8 @@ public class ProdutoService
     {
         ValidarDados(nome, quantidadeMinima);
 
+        ValidarSemDuplicidade(nome, apresentacao, especificacao, null);
+
         var produto = new Produto
         {
             Nome = nome.Trim(),
@@ -47,12 +49,26 @@ public class ProdutoService
         var produto = ObterPorId(id); // recusa se o produto não existe
         ValidarDados(nome, quantidadeMinima); // valida tudo antes de alterar
 
+        ValidarSemDuplicidade(nome, apresentacao, especificacao, id); // o próprio produto não conta como duplicado
+
         produto.Nome = nome.Trim();
         produto.Categoria = categoria;
         produto.Apresentacao = LimparTexto(apresentacao);
         produto.Especificacao = LimparTexto(especificacao);
         produto.QuantidadeMinima = quantidadeMinima;
     }
+
+
+    // Produto IDÊNTICO = mesmo nome + mesma apresentação + mesma especificação, sem diferenciar maiúsculas, acentos
+    // nem espaços nas pontas (apresentação ou especificação em branco equivalem a nulas). Confere TODOS os produtos
+    // cadastrados, inclusive os inativos. "ignorarId" serve para a alteração não achar o próprio produto.
+    public bool ExisteIdentico(string nome, string? apresentacao, string? especificacao, Guid? ignorarId = null) =>
+        _dados.Produtos.Any(p =>
+            p.Id != ignorarId &&
+            TextosIguais(p.Nome, nome) &&
+            TextosIguais(p.Apresentacao, apresentacao) &&
+            TextosIguais(p.Especificacao, especificacao));
+
 
     // Pesquisa por parte do nome, ignorando maiúsculas e ACENTOS ("injetavel" acha "INJETÁVEL").
     // Texto vazio devolve todos. Só produtos ativos, ordenados por nome.
@@ -89,6 +105,21 @@ public class ProdutoService
         if (quantidadeMinima < 0)
             throw new InvalidOperationException("A quantidade mínima não pode ser negativa.");
     }
+
+
+    private void ValidarSemDuplicidade(string nome, string? apresentacao, string? especificacao, Guid? ignorarId)
+    {
+        if (ExisteIdentico(nome, apresentacao, especificacao, ignorarId))
+            throw new InvalidOperationException("Já existe um produto com este nome e apresentação.");
+    }
+
+    // Compara dois textos ignorando maiúsculas, acentos e espaços nas pontas (null e vazio são iguais).
+    private static bool TextosIguais(string? a, string? b) =>
+        CultureInfo.InvariantCulture.CompareInfo.Compare(
+            LimparTexto(a) ?? string.Empty, LimparTexto(b) ?? string.Empty,
+            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) == 0;
+
+
 
     // Texto opcional: limpa os espaços; vazio vira null.
     private static string? LimparTexto(string? texto) =>

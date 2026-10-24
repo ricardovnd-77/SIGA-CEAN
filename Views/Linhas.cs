@@ -25,27 +25,19 @@ public class ProdutoLinha
         Vencido = estoque.TemValidadeVencida(produto, hoje);
         ValidadeProxima = estoque.TemValidadeProxima(produto, hoje);
 
-        // A data de validade mais próxima do que ainda existe em estoque (só para mostrar).
-        var datas = produto.Saldos
-            .Where(s => s.Quantidade > 0 && s.DataValidade is not null)
-            .Select(s => s.DataValidade!.Value)
-            .ToList();
-        if (datas.Count > 0)
+        // Saldos na ordem FEFO: quem decide a ordem é o EstoqueService (a tela não reordena).
+        var saldos = SaldosEmOrdemFefo(produto, estoque);
+
+        // A validade mais próxima do que ainda existe em estoque: o primeiro saldo COM data na fila FEFO (só para mostrar).
+        var proxima = saldos.FirstOrDefault(s => s.DataValidade is not null)?.DataValidade;
+        if (proxima is { } data)
         {
-            var proxima = datas.Min();
-            ValidadeTexto = Rotulos.Validade(proxima, hoje);
+            ValidadeTexto = TextosDeEstoque.DescreverValidade(data, hoje);
             CorValidade = Vencido ? Vermelho : ValidadeProxima ? Laranja : Cinza;
         }
 
-        // Saldos por validade ("12/11/2026: 4 un. · sem validade: 3 un."): só vale a pena quando há validade ou mais de um saldo.
-        var saldos = produto.Saldos.Where(s => s.Quantidade > 0).ToList();
-        if (saldos.Count > 1 || datas.Count > 0)
-        {
-            SaldosTexto = string.Join(" · ", saldos
-                .OrderBy(s => s.DataValidade is null)
-                .ThenBy(s => s.DataValidade)
-                .Select(s => $"{(s.DataValidade is { } d ? d.ToString("dd/MM/yyyy") : "sem validade")}: {s.Quantidade} un."));
-        }
+        // Saldos por validade numa linha ("12/11/2026: 4 un. · sem validade: 3 un."): só quando vale a pena.
+        SaldosTexto = TextosDeEstoque.ResumoDosSaldos(saldos);
 
         CorQuantidade = SemEstoque ? Vermelho : AbaixoDoMinimo ? Laranja : Verde;
     }
@@ -53,17 +45,26 @@ public class ProdutoLinha
     public Produto Produto { get; }
 
     public string Nome => Produto.Nome;
-    public string Detalhe => Rotulos.DetalheDoProduto(Produto);
+    public string Detalhe => TextosDeEstoque.CategoriaComApresentacao(Produto);
     public int Quantidade => Produto.Quantidade;
 
     public bool MostrarMinimo => Produto.QuantidadeMinima is not null;
-    public string MinimoTexto => $"mínimo: {Produto.QuantidadeMinima}";
+    public string MinimoTexto => TextosDeEstoque.Minimo(Produto.QuantidadeMinima);
 
     public bool SemEstoque { get; }
     public bool AbaixoDoMinimo { get; }
     public bool Vencido { get; }
     public bool ValidadeProxima { get; }
     public bool PrecisaDeAtencao => SemEstoque || AbaixoDoMinimo || Vencido || ValidadeProxima;
+
+    // Este produto aparece no filtro escolhido? (as situações já foram perguntadas ao EstoqueService no construtor)
+    public bool Atende(FiltroDeSituacao filtro) =>
+        TextosDeEstoque.Atende(filtro, SemEstoque, AbaixoDoMinimo, Vencido, ValidadeProxima);
+
+    // Os saldos com estoque, na ordem em que SAEM (FEFO). A ordem é decidida pelo EstoqueService: a previsão de retirar o
+    // estoque inteiro devolve exatamente essa fila. Sem estoque não há o que prever (a previsão recusa quantidade zero).
+    public static List<SaldoValidade> SaldosEmOrdemFefo(Produto produto, EstoqueService estoque) =>
+        produto.Quantidade > 0 ? estoque.PrevisaoFefo(produto, produto.Quantidade) : new List<SaldoValidade>();
 
     public string ValidadeTexto { get; } = string.Empty;
     public bool MostrarValidade => ValidadeTexto.Length > 0;
@@ -75,7 +76,26 @@ public class ProdutoLinha
     public Color CorQuantidade { get; }
 }
 
-// Uma linha do Histórico (e das últimas movimentações do Dashboard).
+// Uma linha da lista "Saldos por validade" da ficha do produto (já na ordem FEFO).
+public class SaldoLinha
+{
+    private readonly SaldoValidade _saldo;
+    private readonly int _posicao;
+    private readonly DateOnly _hoje;
+
+    public SaldoLinha(SaldoValidade saldo, int posicao, DateOnly hoje)
+    {
+        _saldo = saldo;
+        _posicao = posicao;
+        _hoje = hoje;
+    }
+
+    public string OrdemTexto => TextosDeEstoque.OrdemDoSaldo(_posicao);
+    public string ValidadeTexto => TextosDeEstoque.DescreverSaldo(_saldo.DataValidade, _hoje);
+    public string QuantidadeTexto => TextosDeEstoque.QuantidadeDoSaldo(_saldo.Quantidade);
+}
+
+// Uma linha do Histórico (e das últimas movimentações do Painel).
 public class MovimentacaoLinha
 {
     private static readonly Color Vermelho = Color.FromArgb("#D95757");

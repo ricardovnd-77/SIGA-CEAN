@@ -12,6 +12,7 @@ public partial class EntradaPage : ContentPage
 
     private readonly List<TipoOrigemEntrada> _origens = Enum.GetValues<TipoOrigemEntrada>().ToList();
     private List<Produto> _lista = new();
+    private Guid? _produtoPreSelecionado; // produto escolhido por outra tela (ficha do produto, Estoque)
 
     public EntradaPage(ProdutoService produtos, MovimentacaoService movimentacoes, UsuarioService usuarios)
     {
@@ -31,10 +32,14 @@ public partial class EntradaPage : ContentPage
         CarregarProdutos();
     }
 
+    // Outra tela abre a Entrada já com este produto escolhido (vale na próxima vez que a tela aparecer).
+    public void PreSelecionar(Guid produtoId) => _produtoPreSelecionado = produtoId;
+
     // Recarrega a lista de produtos (podem ter sido cadastrados em outra tela) mantendo a escolha atual.
     private void CarregarProdutos()
     {
-        var escolhido = ProdutoSelecionado?.Id;
+        var escolhido = _produtoPreSelecionado ?? ProdutoSelecionado?.Id;
+        _produtoPreSelecionado = null;
         _lista = _produtos.Pesquisar(null);
         ProdutoPicker.ItemsSource = _lista.Select(Rotulos.ProdutoNaLista).ToList();
         ProdutoPicker.SelectedIndex = escolhido is { } id ? _lista.FindIndex(p => p.Id == id) : -1;

@@ -14,6 +14,10 @@ public partial class HistoricoPage : ContentPage
     private readonly List<StatusMovimentacao> _status = Enum.GetValues<StatusMovimentacao>().ToList();
     private bool _carregando;
 
+    // Desenhar centenas de linhas de uma vez deixa a tela lenta: mostra-se um bloco e "Mostrar mais" traz o próximo.
+    private const int TamanhoDoBloco = 100;
+    private int _limiteExibido = TamanhoDoBloco;
+
     public HistoricoPage(MovimentacaoService movimentacoes, UsuarioService usuarios)
     {
         InitializeComponent();
@@ -33,19 +37,28 @@ public partial class HistoricoPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        Atualizar();
+        Atualizar(recomecar: true);
     }
 
+    // Mudou a busca ou um filtro: a lista volta a mostrar só o primeiro bloco.
     private void OnFiltroChanged(object? sender, EventArgs e)
     {
-        if (!_carregando) Atualizar();
+        if (!_carregando) Atualizar(recomecar: true);
+    }
+
+    private void OnMostrarMaisClicked(object? sender, EventArgs e)
+    {
+        _limiteExibido += TamanhoDoBloco;
+        Atualizar();
     }
 
     private void OnFiltroToggled(object? sender, ToggledEventArgs e) => OnFiltroChanged(sender, e);
     private void OnFiltroDateChanged(object? sender, DateChangedEventArgs e) => OnFiltroChanged(sender, e);
 
-    private void Atualizar()
+    // recomecar = true volta ao primeiro bloco de 100; ao corrigir/cancelar a lista continua do mesmo tamanho.
+    private void Atualizar(bool recomecar = false)
     {
+        if (recomecar) _limiteExibido = TamanhoDoBloco;
         var administrativo = _usuarios.EhAdministrativo;
         List<Movimentacao> movimentacoes;
 
@@ -59,6 +72,7 @@ public partial class HistoricoPage : ContentPage
             {
                 // Início depois do fim: o Service recusa e a tela só mostra a mensagem.
                 ListaMovimentacoes.ItemsSource = new List<MovimentacaoLinha>();
+                MostrarMaisButton.IsVisible = false;
                 ResumoLabel.Text = ex.Message;
                 return;
             }
@@ -69,19 +83,24 @@ public partial class HistoricoPage : ContentPage
         }
 
         var total = movimentacoes.Count;
-        var busca = BuscaEntry.Text?.Trim();
+        var busca = BuscaEntry.Text;
 
         var filtradas = movimentacoes
-            .Where(m => string.IsNullOrEmpty(busca) || Rotulos.Contem(m.Produto.Nome, busca))
+            .Where(m => Rotulos.MovimentacaoContem(m, busca))
             .Where(m => TipoPicker.SelectedIndex <= 0 || m.Tipo == _tipos[TipoPicker.SelectedIndex - 1])
             .Where(m => StatusPicker.SelectedIndex <= 0 || m.Status == _status[StatusPicker.SelectedIndex - 1])
+            .ToList();
+
+        ListaMovimentacoes.ItemsSource = filtradas
+            .Take(_limiteExibido)
             .Select(m => new MovimentacaoLinha(m, administrativo))
             .ToList();
 
-        ListaMovimentacoes.ItemsSource = filtradas;
-        ResumoLabel.Text = total == 0
-            ? "Nenhuma movimentação registrada ainda."
-            : $"{filtradas.Count} de {total} movimentação(ões)";
+        var restantes = filtradas.Count - _limiteExibido;
+        MostrarMaisButton.IsVisible = restantes > 0;
+        if (restantes > 0) MostrarMaisButton.Text = Rotulos.MostrarMais(restantes);
+
+        ResumoLabel.Text = Rotulos.TotalFiltrado(filtradas.Count, total);
     }
 
     // ---------- Corrigir e cancelar ----------

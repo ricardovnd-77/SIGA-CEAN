@@ -15,12 +15,16 @@
             <VerticalStackLayout Spacing="14">
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Usuário" Style="{StaticResource FieldLabel}" />
-                    <Entry x:Name="LoginEntry" Placeholder="Usuário" />
+                    <Entry x:Name="LoginEntry" Placeholder="Usuário" Completed="OnLoginCompleted" />
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Senha" Style="{StaticResource FieldLabel}" />
                     <Entry x:Name="SenhaEntry" Placeholder="Senha" IsPassword="True" Completed="OnEntrarClicked" />
+                    <HorizontalStackLayout Spacing="4">
+                        <CheckBox x:Name="MostrarSenhaCheck" CheckedChanged="OnMostrarSenhaChanged" VerticalOptions="Center" />
+                        <Label Text="Mostrar senha" VerticalOptions="Center" Style="{StaticResource MutedLabel}" />
+                    </HorizontalStackLayout>
                 </VerticalStackLayout>
 
                 <Label x:Name="MensagemErroLabel" TextColor="{StaticResource Red}" IsVisible="False" HorizontalOptions="Center" />

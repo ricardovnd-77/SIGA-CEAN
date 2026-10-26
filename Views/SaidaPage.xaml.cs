@@ -34,6 +34,16 @@ public partial class SaidaPage : ContentPage
     {
         base.OnAppearing();
         CarregarProdutos();
+        FocarPrimeiroCampoVazio();
+    }
+
+    // O cursor já começa onde falta preencher: sem produto escolhido, no produto; com produto, na quantidade (ou na
+    // quantidade contada, no ajuste de balanço).
+    private void FocarPrimeiroCampoVazio()
+    {
+        if (ProdutoSelecionado is null) ProdutoPicker.Focus();
+        else if (_modoAjuste) ApuradaEntry.Focus();
+        else QuantidadeEntry.Focus();
     }
 
     // Outra tela abre a Saída já com este produto escolhido (vale na próxima vez que a tela aparecer).
@@ -62,6 +72,29 @@ public partial class SaidaPage : ContentPage
     {
         AtualizarDisponivel();
         AtualizarDiferenca();
+        AtualizarPrevisao();
+    }
+
+    private void OnQuantidadeChanged(object? sender, TextChangedEventArgs e) => AtualizarPrevisao();
+
+    // "Vai sair de: 4 un. com validade 12/11/2026; 3 un. sem validade informada". Só exibe: quem decide o FEFO é o
+    // MovimentacaoService (PrevisaoDeSaida). Quantidade inválida ou maior que o estoque: não mostra nada e não quebra.
+    private void AtualizarPrevisao()
+    {
+        PrevisaoLabel.Text = string.Empty;
+
+        var produto = ProdutoSelecionado;
+        var quantidade = Rotulos.LerInteiro(QuantidadeEntry.Text);
+        if (produto is null || quantidade is null || quantidade <= 0 || quantidade > produto.Quantidade) return;
+
+        try
+        {
+            PrevisaoLabel.Text = "Vai sair de: " + Rotulos.Previsao(_movimentacoes.PrevisaoDeSaida(produto, quantidade.Value));
+        }
+        catch (InvalidOperationException)
+        {
+            // o motivo aparece ao registrar
+        }
     }
 
     private void AtualizarDisponivel()
@@ -155,6 +188,12 @@ public partial class SaidaPage : ContentPage
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(RetiradoPorEntry.Text))
+        {
+            MostrarErro("Informe quem está retirando o produto.");
+            return;
+        }
+
         if (quantidade > produto.Quantidade)
         {
             MostrarErro($"Estoque insuficiente: há apenas {produto.Quantidade} unidade(s) de \"{produto.Nome}\".");
@@ -166,8 +205,9 @@ public partial class SaidaPage : ContentPage
             $"Produto: {Rotulos.ProdutoNaLista(produto)}\n" +
             $"Quantidade: {quantidade}\n" +
             $"Estoque: {produto.Quantidade} → {produto.Quantidade - quantidade}\n" +
-            $"Destino: {DestinoEntry.Text.Trim()}" +
-            (string.IsNullOrWhiteSpace(RetiradoPorEntry.Text) ? string.Empty : $"\nRetirado por: {RetiradoPorEntry.Text.Trim()}"),
+            $"Sai de: {Rotulos.Previsao(_movimentacoes.PrevisaoDeSaida(produto, quantidade.Value))}\n" +
+            $"Destino: {DestinoEntry.Text.Trim()}\n" +
+            $"Retirado por: {RetiradoPorEntry.Text.Trim()}",
             "Confirmar", "Revisar");
         if (!confirmou) return;
 
@@ -187,7 +227,7 @@ public partial class SaidaPage : ContentPage
         var origem = string.Join("; ", movimentacao.SaldosConsumidos.Select(s =>
             $"{s.Quantidade} un. {(s.DataValidade is { } d ? $"com validade {d:dd/MM/yyyy}" : "sem validade informada")}"));
 
-        MostrarSucesso($"Saída registrada: {produto.Nome} (−{quantidade}). Saiu de: {origem}. Estoque agora: {produto.Quantidade}.");
+        MostrarSucesso($"Saída registrada: {produto.Nome} (−{quantidade}), retirado por {movimentacao.RetiradoPor}. Saiu de: {origem}. Estoque agora: {produto.Quantidade}.");
         LimparFormulario();
     }
 
@@ -234,6 +274,8 @@ public partial class SaidaPage : ContentPage
         ApuradaEntry.Text = string.Empty;
         ObservacaoEntry.Text = string.Empty;
         DiferencaLabel.Text = string.Empty;
+        PrevisaoLabel.Text = string.Empty;
+        ProdutoPicker.Focus(); // pronto para o próximo registro
     }
 
     private void MostrarErro(string mensagem)

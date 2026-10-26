@@ -52,7 +52,8 @@
                             <Label Text="Este produto tem data de validade" VerticalOptions="Center" />
                             <Switch x:Name="ValidadeSwitch" Toggled="OnValidadeToggled" VerticalOptions="Center" />
                         </HorizontalStackLayout>
-                        <DatePicker x:Name="ValidadePicker" IsVisible="False" HorizontalOptions="Start" />
+                        <DatePicker x:Name="ValidadePicker" IsVisible="False" HorizontalOptions="Start" DateSelected="OnValidadeSelected" />
+                        <Label x:Name="AvisoValidadeLabel" TextColor="{StaticResource Orange}" IsVisible="False" />
                     </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="6">

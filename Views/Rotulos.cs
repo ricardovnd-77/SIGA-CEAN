@@ -81,6 +81,41 @@ public static class Rotulos
         _ => "0"
     };
 
+    // "4 un. com validade 12/11/2026; 3 un. sem validade informada": de onde uma saída vai retirar o estoque (FEFO).
+    // Recebe a previsão que o MovimentacaoService já calculou; aqui só se escreve o texto.
+    public static string Previsao(IEnumerable<SaldoValidade> saldos) =>
+        string.Join("; ", saldos.Select(s => s.DataValidade is { } data
+            ? $"{s.Quantidade} un. com validade {data:dd/MM/yyyy}"
+            : $"{s.Quantidade} un. sem validade informada"));
+
+    // Aviso (laranja) da tela de Entrada quando a validade digitada já passou. A entrada continua sendo aceita
+    // (decisão do grupo): o produto só vai aparecer como vencido. Vazio quando não há o que avisar.
+    public static string AvisoDeValidadePassada(DateOnly? validade, DateOnly hoje) =>
+        validade is { } data && data < hoje
+            ? "Esta validade já passou: o produto vai aparecer como vencido."
+            : string.Empty;
+
+    // A busca do Histórico acha a movimentação pelo produto, por quem retirou, pelo destino, pelo documento e pela
+    // observação (sem diferenciar maiúsculas nem acentos). Busca vazia acha tudo.
+    public static bool MovimentacaoContem(Movimentacao movimentacao, string? busca)
+    {
+        if (string.IsNullOrWhiteSpace(busca)) return true;
+        var termo = busca.Trim();
+        return Contem(movimentacao.Produto.Nome, termo)
+            || Contem(movimentacao.RetiradoPor, termo)
+            || Contem(movimentacao.Destino, termo)
+            || Contem(movimentacao.Documento, termo)
+            || Contem(movimentacao.Observacao, termo);
+    }
+
+    // "120 de 870 movimentações" (a lista filtrada em relação ao total do histórico).
+    public static string TotalFiltrado(int filtradas, int total) =>
+        total == 0 ? "Nenhuma movimentação registrada ainda."
+        : $"{filtradas} de {total} {(total == 1 ? "movimentação" : "movimentações")}";
+
+    // "Mostrar mais (20 restantes)" (o botão do Histórico, que mostra um bloco de cada vez).
+    public static string MostrarMais(int restantes) => $"Mostrar mais ({restantes} {(restantes == 1 ? "restante" : "restantes")})";
+
     // Procura "busca" dentro de "texto", sem diferenciar maiúsculas nem acentos (mesmo critério do ProdutoService.Pesquisar).
     public static bool Contem(string? texto, string busca) =>
         texto is not null &&

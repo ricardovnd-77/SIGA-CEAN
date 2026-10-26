@@ -30,16 +30,17 @@
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
                             <VerticalStackLayout Grid.Column="0" Spacing="6">
                                 <Label Text="Quantidade *" Style="{StaticResource FieldLabel}" />
-                                <Entry x:Name="QuantidadeEntry" Placeholder="Ex.: 5" Keyboard="Numeric" />
+                                <Entry x:Name="QuantidadeEntry" Placeholder="Ex.: 5" Keyboard="Numeric" TextChanged="OnQuantidadeChanged" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="6">
                                 <Label Text="Destino *" Style="{StaticResource FieldLabel}" />
                                 <Entry x:Name="DestinoEntry" Placeholder="Ex.: Canil, Clínica" />
                             </VerticalStackLayout>
                         </Grid>
+                        <Label x:Name="PrevisaoLabel" Style="{StaticResource MutedLabel}" />
                         <VerticalStackLayout Spacing="6">
-                            <Label Text="Retirado por" Style="{StaticResource FieldLabel}" />
-                            <Entry x:Name="RetiradoPorEntry" Placeholder="Quem levou o produto (opcional)" />
+                            <Label Text="Retirado por *" Style="{StaticResource FieldLabel}" />
+                            <Entry x:Name="RetiradoPorEntry" Placeholder="Quem levou o produto" />
                         </VerticalStackLayout>
                     </VerticalStackLayout>
 

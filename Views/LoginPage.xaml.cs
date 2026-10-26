@@ -15,6 +15,18 @@ public partial class LoginPage : ContentPage
         _servicos = servicos;
     }
 
+    // A tela de login abre com o cursor no usuário.
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        LoginEntry.Focus();
+    }
+
+    // Enter no usuário passa para a senha.
+    private void OnLoginCompleted(object? sender, EventArgs e) => SenhaEntry.Focus();
+
+    private void OnMostrarSenhaChanged(object? sender, CheckedChangedEventArgs e) => SenhaEntry.IsPassword = !e.Value;
+
     private void OnEntrarClicked(object? sender, EventArgs e)
     {
         var usuario = _usuarios.Login(LoginEntry.Text ?? string.Empty, SenhaEntry.Text ?? string.Empty);

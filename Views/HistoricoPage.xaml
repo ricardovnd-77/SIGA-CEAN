@@ -5,7 +5,7 @@
              x:Class="SigaCean.Views.HistoricoPage"
              Title="Histórico">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Padding="28,24,28,12" RowSpacing="12">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Padding="28,24,28,12" RowSpacing="12">
 
         <VerticalStackLayout Grid.Row="0" Spacing="4">
             <Label Text="Histórico de movimentações" Style="{StaticResource PageTitle}" />
@@ -13,7 +13,7 @@
         </VerticalStackLayout>
 
         <Grid Grid.Row="1" ColumnDefinitions="*,170,200" ColumnSpacing="10">
-            <Entry x:Name="BuscaEntry" Grid.Column="0" Placeholder="Buscar por nome do produto" TextChanged="OnFiltroChanged" />
+            <Entry x:Name="BuscaEntry" Grid.Column="0" Placeholder="Buscar produto, retirante, destino, documento..." TextChanged="OnFiltroChanged" />
             <Picker x:Name="TipoPicker" Grid.Column="1" Title="Tipo" SelectedIndexChanged="OnFiltroChanged" />
             <Picker x:Name="StatusPicker" Grid.Column="2" Title="Situação" SelectedIndexChanged="OnFiltroChanged" />
         </Grid>
@@ -63,6 +63,8 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+
+        <Button x:Name="MostrarMaisButton" Grid.Row="5" Text="Mostrar mais" Clicked="OnMostrarMaisClicked" IsVisible="False" HorizontalOptions="Center" />
 
     </Grid>
 

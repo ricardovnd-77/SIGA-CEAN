@@ -30,6 +30,14 @@ public partial class EntradaPage : ContentPage
     {
         base.OnAppearing();
         CarregarProdutos();
+        FocarPrimeiroCampoVazio();
+    }
+
+    // O cursor já começa onde falta preencher: sem produto escolhido, no produto; com produto, na quantidade.
+    private void FocarPrimeiroCampoVazio()
+    {
+        if (ProdutoSelecionado is null) ProdutoPicker.Focus();
+        else QuantidadeEntry.Focus();
     }
 
     // Outra tela abre a Entrada já com este produto escolhido (vale na próxima vez que a tela aparecer).
@@ -68,7 +76,21 @@ public partial class EntradaPage : ContentPage
         if (!AFPainel.IsVisible) AFEntry.Text = string.Empty;
     }
 
-    private void OnValidadeToggled(object? sender, ToggledEventArgs e) => ValidadePicker.IsVisible = e.Value;
+    private void OnValidadeToggled(object? sender, ToggledEventArgs e)
+    {
+        ValidadePicker.IsVisible = e.Value;
+        AtualizarAvisoDeValidade();
+    }
+
+    private void OnValidadeSelected(object? sender, DateChangedEventArgs e) => AtualizarAvisoDeValidade();
+
+    // Validade no passado continua aceita (decisão do grupo); a tela só avisa que o produto vai aparecer como vencido.
+    private void AtualizarAvisoDeValidade()
+    {
+        DateOnly? validade = ValidadeSwitch.IsToggled ? DateOnly.FromDateTime(ValidadePicker.Date ?? DateTime.Today) : null;
+        AvisoValidadeLabel.Text = Rotulos.AvisoDeValidadePassada(validade, DateOnly.FromDateTime(DateTime.Today));
+        AvisoValidadeLabel.IsVisible = AvisoValidadeLabel.Text.Length > 0;
+    }
 
     private async void OnRegistrarClicked(object? sender, EventArgs e)
     {
@@ -137,6 +159,8 @@ public partial class EntradaPage : ContentPage
         ValidadePicker.Date = DateTime.Today.AddMonths(6);
         ObservacaoEntry.Text = string.Empty;
         AtualizarCamposDaOrigem();
+        AtualizarAvisoDeValidade();
+        ProdutoPicker.Focus(); // pronto para o próximo registro
     }
 
     private void MostrarErro(string mensagem)

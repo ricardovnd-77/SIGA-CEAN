@@ -5,7 +5,7 @@
              x:Class="SigaCean.Views.RelatoriosPage"
              Title="Relatórios">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Padding="28,24,28,12" RowSpacing="12">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Padding="28,24,28,12" RowSpacing="12">
 
         <VerticalStackLayout Grid.Row="0" Spacing="4">
             <Label Text="Relatórios" Style="{StaticResource PageTitle}" />
@@ -14,9 +14,14 @@
 
         <Grid Grid.Row="1" ColumnDefinitions="260,*" ColumnSpacing="10">
             <Picker x:Name="RelatorioPicker" Grid.Column="0" Title="Relatório" SelectedIndexChanged="OnRelatorioChanged" />
-            <Picker x:Name="CategoriaPicker" Grid.Column="1" Title="Categoria" HorizontalOptions="Start" WidthRequest="220" SelectedIndexChanged="OnFiltroChanged" />
+            <!-- Categoria e ordem: só para o Consumo no período. -->
+            <HorizontalStackLayout Grid.Column="1" Spacing="10">
+                <Picker x:Name="CategoriaPicker" Title="Categoria" WidthRequest="220" SelectedIndexChanged="OnFiltroChanged" />
+                <Picker x:Name="OrdemPicker" Title="Ordenar por" WidthRequest="220" SelectedIndexChanged="OnFiltroChanged" />
+            </HorizontalStackLayout>
         </Grid>
 
+        <!-- Período das opções Entradas e Saídas (datas soltas). -->
         <HorizontalStackLayout x:Name="PeriodoPainel" Grid.Row="2" Spacing="12">
             <Label Text="Período: de" VerticalOptions="Center" Style="{StaticResource MutedLabel}" />
             <DatePicker x:Name="InicioPicker" DateSelected="OnFiltroDateChanged" />
@@ -24,29 +29,92 @@
             <DatePicker x:Name="FimPicker" DateSelected="OnFiltroDateChanged" />
         </HorizontalStackLayout>
 
-        <Label x:Name="ResumoLabel" Grid.Row="3" FontAttributes="Bold" />
+        <!-- Consumo no período: seletor de período, busca, resumo, botão do PDF e cabeçalho das colunas. -->
+        <VerticalStackLayout x:Name="ConsumoPainel" Grid.Row="3" Spacing="10">
+            <views:SeletorPeriodoView x:Name="SeletorPeriodo" PeriodoAlterado="OnPeriodoAlterado" />
 
-        <CollectionView x:Name="ListaRelatorio" Grid.Row="4" SelectionMode="None">
-            <CollectionView.ItemsLayout>
-                <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
-            </CollectionView.ItemsLayout>
-            <CollectionView.EmptyView>
-                <Label Text="Nada para mostrar neste relatório." Style="{StaticResource MutedLabel}" Margin="4,20" />
-            </CollectionView.EmptyView>
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="views:LinhaRelatorio">
-                    <Border Padding="18,12">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                            <VerticalStackLayout Grid.Column="0" Spacing="3">
-                                <Label Text="{Binding Titulo}" FontAttributes="Bold" FontSize="15" />
-                                <Label Text="{Binding Detalhe}" IsVisible="{Binding MostrarDetalhe}" Style="{StaticResource MutedLabel}" />
-                            </VerticalStackLayout>
-                            <Label Grid.Column="1" Text="{Binding Destaque}" TextColor="{Binding CorDestaque}" FontAttributes="Bold" FontSize="18" VerticalOptions="Center" />
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <Entry x:Name="PesquisaEntry" Grid.Column="0" Placeholder="Buscar por produto" TextChanged="OnPesquisaTextChanged" />
+                <Button x:Name="GerarPdfButton" Grid.Column="1" Text="Gerar PDF" Style="{StaticResource GreenButton}" Clicked="OnGerarPdfClicked" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                <VerticalStackLayout Grid.Column="0">
+                    <Label x:Name="ResumoProdutosLabel" FontSize="20" FontAttributes="Bold" />
+                    <Label Text="Produtos" Style="{StaticResource MutedLabel}" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1">
+                    <Label x:Name="ResumoEntradasLabel" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource Green}" />
+                    <Label Text="Entradas" Style="{StaticResource MutedLabel}" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="2">
+                    <Label x:Name="ResumoSaidasLabel" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource Red}" />
+                    <Label Text="Saídas" Style="{StaticResource MutedLabel}" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="3">
+                    <Label x:Name="ResumoAjustesLabel" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource Orange}" />
+                    <Label Text="Ajustes" Style="{StaticResource MutedLabel}" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <Label x:Name="MensagemConsumoLabel" Style="{StaticResource MutedLabel}" IsVisible="False" />
+
+            <Grid x:Name="CabecalhoConsumo" ColumnDefinitions="*,62,62,62,86,62" ColumnSpacing="10" Padding="18,0">
+                <Label Grid.Column="0" Text="Produto" Style="{StaticResource FieldLabel}" />
+                <Label Grid.Column="1" Text="Entradas" Style="{StaticResource FieldLabel}" HorizontalTextAlignment="End" />
+                <Label Grid.Column="2" Text="Saídas" Style="{StaticResource FieldLabel}" HorizontalTextAlignment="End" />
+                <Label Grid.Column="3" Text="Ajustes" Style="{StaticResource FieldLabel}" HorizontalTextAlignment="End" />
+                <Label Grid.Column="4" Text="Média por mês" Style="{StaticResource FieldLabel}" HorizontalTextAlignment="End" />
+                <Label Grid.Column="5" Text="Estoque" Style="{StaticResource FieldLabel}" HorizontalTextAlignment="End" />
+            </Grid>
+        </VerticalStackLayout>
+
+        <Label x:Name="ResumoLabel" Grid.Row="4" FontAttributes="Bold" />
+
+        <!-- As duas listas ocupam o mesmo lugar: aparece a do relatório escolhido. -->
+        <Grid Grid.Row="5">
+            <CollectionView x:Name="ListaConsumo" SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="views:ConsumoLinha">
+                        <Border Padding="18,10">
+                            <Grid ColumnDefinitions="*,62,62,62,86,62" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="{Binding Produto}" FontAttributes="Bold" VerticalOptions="Center" />
+                                <Label Grid.Column="1" Text="{Binding EntradasTexto}" TextColor="{StaticResource Green}" HorizontalTextAlignment="End" VerticalOptions="Center" />
+                                <Label Grid.Column="2" Text="{Binding SaidasTexto}" TextColor="{StaticResource Red}" HorizontalTextAlignment="End" VerticalOptions="Center" />
+                                <Label Grid.Column="3" Text="{Binding AjustesTexto}" TextColor="{StaticResource Orange}" HorizontalTextAlignment="End" VerticalOptions="Center" />
+                                <Label Grid.Column="4" Text="{Binding MediaTexto}" HorizontalTextAlignment="End" VerticalOptions="Center" />
+                                <Label Grid.Column="5" Text="{Binding EstoqueTexto}" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <CollectionView x:Name="ListaRelatorio" SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.EmptyView>
+                    <Label Text="Nada para mostrar neste relatório." Style="{StaticResource MutedLabel}" Margin="4,20" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="views:LinhaRelatorio">
+                        <Border Padding="18,12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                                <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                    <Label Text="{Binding Titulo}" FontAttributes="Bold" FontSize="15" />
+                                    <Label Text="{Binding Detalhe}" IsVisible="{Binding MostrarDetalhe}" Style="{StaticResource MutedLabel}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" Text="{Binding Destaque}" TextColor="{Binding CorDestaque}" FontAttributes="Bold" FontSize="18" VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
 
     </Grid>
 

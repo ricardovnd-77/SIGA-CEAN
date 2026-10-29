@@ -16,6 +16,7 @@
 		<Compile Include="..\Data\**\*.cs" LinkBase="Data" />
 		<Compile Include="..\Services\**\*.cs" LinkBase="Services" />
 		<Compile Include="..\Views\Rotulos.cs" LinkBase="Views" />
+		<Compile Include="..\Reports\**\*.cs" LinkBase="Reports" />
 		<Compile Include="..\Views\TextosDeEstoque.cs" LinkBase="Views" />
 	</ItemGroup>
 
@@ -23,6 +24,9 @@
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
 		<PackageReference Include="xunit" Version="2.9.3" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+		<PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
+		<!-- Versão corrigida da dependência transitiva do PDFsharp (avisos de vulnerabilidade NU1902/NU1903). -->
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
 	</ItemGroup>
 
 	<ItemGroup>

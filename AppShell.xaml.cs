@@ -6,7 +6,7 @@ namespace SigaCean;
 
 // Menu lateral. O que aparece depende do perfil de quem entrou:
 //   Administrativo -> todas as áreas
-//   Veterinário    -> só a consulta do estoque (não recebe permissões administrativas)
+//   Veterinário    -> consulta o estoque e registra saídas (não recebe as demais permissões administrativas)
 //
 // Também é daqui que as telas navegam umas para as outras (IrParaEstoque, IrParaEntrada...): cada método só funciona
 // se o perfil de quem entrou tem aquela área no menu, então o Veterinário nunca chega numa tela administrativa.
@@ -34,7 +34,14 @@ public partial class AppShell : Shell
         {
             Items.Add(CriarItem("Produtos", servicos.GetRequiredService<ProdutosPage>()));
             Items.Add(CriarItem("Entrada", servicos.GetRequiredService<EntradaPage>()));
+        }
+
+        // Os dois perfis registram saída (o Veterinário não vê o ajuste de balanço, que é do Administrativo).
+        if (usuarios.PodeRegistrarSaida)
             Items.Add(CriarItem("Saída", servicos.GetRequiredService<SaidaPage>()));
+
+        if (usuarios.EhAdministrativo)
+        {
             Items.Add(CriarItem("Histórico", servicos.GetRequiredService<HistoricoPage>()));
             Items.Add(CriarItem("Relatórios", servicos.GetRequiredService<RelatoriosPage>()));
             Items.Add(CriarItem("Gráficos", servicos.GetRequiredService<GraficosPage>()));

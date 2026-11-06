@@ -23,7 +23,6 @@ public partial class EntradaPage : ContentPage
 
         OrigemPicker.ItemsSource = _origens.Select(Rotulos.NomeDaOrigem).ToList();
         ValidadePicker.Date = DateTime.Today.AddMonths(6);
-        AtualizarCamposDaOrigem();
     }
 
     protected override void OnAppearing()
@@ -65,15 +64,6 @@ public partial class EntradaPage : ContentPage
         EstoqueAtualLabel.Text = produto is not null ? $"Estoque atual: {produto.Quantidade} un."
             : _lista.Count == 0 ? "Nenhum produto cadastrado. Cadastre primeiro em Produtos."
             : string.Empty;
-    }
-
-    private void OnOrigemChanged(object? sender, EventArgs e) => AtualizarCamposDaOrigem();
-
-    // O número da AF só faz sentido para compra.
-    private void AtualizarCamposDaOrigem()
-    {
-        AFPainel.IsVisible = OrigemPicker.SelectedIndex >= 0 && _origens[OrigemPicker.SelectedIndex] == TipoOrigemEntrada.Compra;
-        if (!AFPainel.IsVisible) AFEntry.Text = string.Empty;
     }
 
     private void OnValidadeToggled(object? sender, ToggledEventArgs e)
@@ -133,7 +123,7 @@ public partial class EntradaPage : ContentPage
 
         try
         {
-            _movimentacoes.RegistrarEntrada(produto, quantidade.Value, origem, OrigemDetalheEntry.Text, AFEntry.Text,
+            _movimentacoes.RegistrarEntrada(produto, quantidade.Value, origem, OrigemDetalheEntry.Text, IdentificacaoOrigemEntry.Text,
                 DocumentoEntry.Text, validade, _usuarios.UsuarioLogado, ObservacaoEntry.Text);
         }
         catch (InvalidOperationException ex)
@@ -153,12 +143,11 @@ public partial class EntradaPage : ContentPage
         QuantidadeEntry.Text = string.Empty;
         OrigemPicker.SelectedIndex = -1;
         OrigemDetalheEntry.Text = string.Empty;
-        AFEntry.Text = string.Empty;
+        IdentificacaoOrigemEntry.Text = string.Empty;
         DocumentoEntry.Text = string.Empty;
         ValidadeSwitch.IsToggled = false;
         ValidadePicker.Date = DateTime.Today.AddMonths(6);
         ObservacaoEntry.Text = string.Empty;
-        AtualizarCamposDaOrigem();
         AtualizarAvisoDeValidade();
         ProdutoPicker.Focus(); // pronto para o próximo registro
     }

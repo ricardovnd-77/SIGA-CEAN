@@ -3,7 +3,7 @@ using SigaCean.Services;
 
 namespace SigaCean.Views;
 
-// Saída e ajuste de balanço (Administrativo). A tela coleta os dados; o MovimentacaoService valida, aplica o FEFO
+// Saída (os dois perfis) e ajuste de balanço (só Administrativo). A tela coleta os dados; o MovimentacaoService valida, aplica o FEFO
 // e grava. A tela só confere o básico antes, para dar uma mensagem clara.
 public partial class SaidaPage : ContentPage
 {
@@ -28,11 +28,13 @@ public partial class SaidaPage : ContentPage
         _movimentacoes = movimentacoes;
         _usuarios = usuarios;
         AplicarModo();
+        AplicarPerfil();
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        AplicarPerfil();
         CarregarProdutos();
         FocarPrimeiroCampoVazio();
     }
@@ -44,6 +46,17 @@ public partial class SaidaPage : ContentPage
         if (ProdutoSelecionado is null) ProdutoPicker.Focus();
         else if (_modoAjuste) ApuradaEntry.Focus();
         else QuantidadeEntry.Focus();
+    }
+
+    // O Veterinário só registra saída: não vê a escolha de "Ajuste de balanço" (que é do Administrativo).
+    private void AplicarPerfil()
+    {
+        var administrativo = _usuarios.EhAdministrativo;
+        ModoLayout.IsVisible = administrativo;
+        SubtituloLabel.Text = administrativo
+            ? "Retire produtos do estoque ou corrija a quantidade depois de uma contagem (ajuste de balanço)."
+            : "Retire produtos do estoque.";
+        if (!administrativo && _modoAjuste) TrocarModo(ajuste: false);
     }
 
     // Outra tela abre a Saída já com este produto escolhido (vale na próxima vez que a tela aparecer).
@@ -164,6 +177,12 @@ public partial class SaidaPage : ContentPage
         if (produto is null)
         {
             MostrarErro("Escolha um produto.");
+            return;
+        }
+
+        if (_modoAjuste && !_usuarios.EhAdministrativo)
+        {
+            MostrarErro("Só o perfil Administrativo faz ajuste de balanço.");
             return;
         }
 

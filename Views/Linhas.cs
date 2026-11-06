@@ -154,7 +154,7 @@ public class MovimentacaoLinha
                 case TipoMovimentacao.Entrada:
                     if (m.TipoOrigem is { } origem) partes.Add($"Origem: {Rotulos.NomeDaOrigem(origem)}");
                     if (!string.IsNullOrWhiteSpace(m.Origem)) partes.Add(m.Origem);
-                    if (!string.IsNullOrWhiteSpace(m.NumeroAF)) partes.Add($"AF {m.NumeroAF}");
+                    if (!string.IsNullOrWhiteSpace(m.IdentificacaoOrigem)) partes.Add($"id. origem {m.IdentificacaoOrigem}");
                     if (!string.IsNullOrWhiteSpace(m.Documento)) partes.Add($"Doc. {m.Documento}");
                     if (m.DataValidade is { } validade) partes.Add($"Validade {validade:dd/MM/yyyy}");
                     break;

@@ -34,7 +34,7 @@ public class MovimentacaoServiceTests
         Assert.Equal(10, mov.Quantidade);
         Assert.Equal(TipoOrigemEntrada.Doacao, mov.TipoOrigem);
         Assert.Equal("Maria", mov.Origem);
-        Assert.Null(mov.NumeroAF);
+        Assert.Null(mov.IdentificacaoOrigem);
         Assert.Equal("NF 123", mov.Documento);
         Assert.Equal(Venc1, mov.DataValidade);
         Assert.Equal("obs", mov.Observacao);

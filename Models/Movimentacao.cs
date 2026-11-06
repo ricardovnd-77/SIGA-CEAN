@@ -22,7 +22,7 @@ public class Movimentacao
     // --- Só para ENTRADA ---
     public TipoOrigemEntrada? TipoOrigem { get; init; }
     public string? Origem { get; init; } // detalhe da origem, ex.: nome do doador ou do departamento
-    public string? NumeroAF { get; init; } // só faz sentido para compra
+    public string? IdentificacaoOrigem { get; init; } // número ou código que identifica a origem (ex.: a AF de uma compra/licitação)
     public string? Documento { get; init; } // nota fiscal, pedido de compra ou documento de transferência/doação
     public DateOnly? DataValidade { get; init; } // validade do que entrou (opcional)
 

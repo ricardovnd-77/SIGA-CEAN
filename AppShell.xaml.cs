@@ -37,6 +37,8 @@ public partial class AppShell : Shell
             Items.Add(CriarItem("Saída", servicos.GetRequiredService<SaidaPage>()));
             Items.Add(CriarItem("Histórico", servicos.GetRequiredService<HistoricoPage>()));
             Items.Add(CriarItem("Relatórios", servicos.GetRequiredService<RelatoriosPage>()));
+            Items.Add(CriarItem("Gráficos", servicos.GetRequiredService<GraficosPage>()));
+            Items.Add(CriarItem("Rel. por categoria", servicos.GetRequiredService<RelatorioCategoriaPage>()));
         }
     }
 

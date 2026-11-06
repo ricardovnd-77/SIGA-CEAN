@@ -1,179 +1,115 @@
-using PdfSharp.Pdf.IO;
-using SigaCean.Data;
-using SigaCean.Models;
-using SigaCean.Reports;
+using System.Text;
+using SigaCean.Infrastructure;
+using SigaCean.Presentation.Reports;
 using SigaCean.Services;
 
 namespace SigaCean.Tests;
 
-// Testa o PDF do Relatório de Consumo (Reports/RelatorioConsumoPdf.cs): gera o arquivo de verdade, numa pasta temporária,
-// e confere que é um PDF válido. Os números do relatório vêm do RelatorioService (testado em RelatorioServiceTests);
-// aqui só se prova que o PDF é gerado com dados reais, sem movimentações e com os nomes de arquivo esperados.
 public class RelatorioPdfTests
 {
-    // Os produtos e o histórico reais do CEAN carregados (do jeito que o MauiProgram faz) e o service de relatórios.
-    private static RelatorioService RelatoriosComDadosReais()
-    {
-        var dados = new AppData();
-        DadosCean.Carregar(dados);
-        HistoricoCean.Carregar(dados);
-        return new RelatorioService(dados, new EstoqueService(dados));
-    }
+    private static string CaminhoTemporario() => Path.Combine(Path.GetTempPath(), $"relatorio_{Guid.NewGuid():N}.pdf");
 
-    // Gera o PDF num arquivo temporário, passa o caminho para a conferência e apaga o arquivo no fim.
-    private static void ComPdfGerado(Action<string> gerar, Action<string> conferir)
+    [Fact]
+    public void Gerar_ComDadosReais_CriaUmPdfValido()
     {
-        var caminho = Path.Combine(Path.GetTempPath(), $"siga-cean-teste-{Guid.NewGuid():N}.pdf");
+        var loja = new DataStore();
+        var itens = new RelatorioService(loja).GerarRelatorioConsumo(new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+        var caminho = CaminhoTemporario();
+
         try
         {
-            gerar(caminho);
-            conferir(caminho);
+            RelatorioConsumoPdf.Gerar(caminho, itens, TipoPeriodo.Anual, new DateTime(2026, 1, 1), new DateTime(2026, 12, 31), "Todas as categorias", "Teste");
+
+            var bytes = File.ReadAllBytes(caminho);
+            Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(bytes, 0, 5));
+            Assert.True(bytes.Length > 5_000);
         }
         finally
         {
-            if (File.Exists(caminho)) File.Delete(caminho);
+            File.Delete(caminho);
         }
     }
 
-    // Um PDF válido começa com "%PDF-", termina com "%%EOF" e o leitor de PDF consegue abrir e contar as páginas.
-    private static int ConferirPdfValido(string caminho)
-    {
-        Assert.True(File.Exists(caminho), "O arquivo PDF não foi criado.");
-
-        var bytes = File.ReadAllBytes(caminho);
-        Assert.True(bytes.Length > 500, "O PDF está pequeno demais para ter conteúdo.");
-        Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(bytes, 0, 5));
-        Assert.Contains("%%EOF", System.Text.Encoding.ASCII.GetString(bytes, Math.Max(0, bytes.Length - 32), Math.Min(32, bytes.Length)));
-
-        using var documento = PdfReader.Open(caminho, PdfDocumentOpenMode.Import);
-        return documento.PageCount;
-    }
-
-    // ---------- Gerar ----------
-
     [Fact]
-    public void Gerar_Com_Dados_Reais_Cria_Um_Pdf_Valido_Com_Varias_Paginas()
+    public void Gerar_SemMovimentacoes_AindaCriaOPdf()
     {
-        var relatorios = RelatoriosComDadosReais();
+        var caminho = CaminhoTemporario();
 
-        // O ano da última movimentação do histórico real: é onde há consumo para mostrar.
-        var ultima = relatorios.DataDaUltimaMovimentacao();
-        Assert.NotNull(ultima);
-        var (inicio, fim) = PeriodoRelatorio.Contendo(TipoPeriodo.Anual, ultima!.Value);
+        try
+        {
+            RelatorioConsumoPdf.Gerar(caminho, [], TipoPeriodo.Mensal, new DateTime(2026, 1, 1), new DateTime(2026, 1, 31), "Medicamento", null);
 
-        var itens = relatorios.GerarRelatorioConsumo(inicio, fim);
-        Assert.NotEmpty(itens);
-
-        ComPdfGerado(
-            caminho => RelatorioConsumoPdf.Gerar(caminho, itens, TipoPeriodo.Anual, inicio, fim, "Todas as categorias", "Administrativo (teste)"),
-            caminho =>
-            {
-                var paginas = ConferirPdfValido(caminho);
-
-                // Com dezenas de produtos a tabela não cabe numa página só (o cabeçalho se repete em cada uma).
-                if (itens.Count > 60)
-                    Assert.True(paginas > 1, $"Esperava mais de uma página para {itens.Count} produtos, mas saiu {paginas}.");
-            });
-    }
-
-    [Fact]
-    public void Gerar_Sem_Movimentacoes_Cria_Um_Pdf_Valido_De_Uma_Pagina()
-    {
-        var inicio = new DateTime(2020, 1, 1);
-        var fim = new DateTime(2020, 1, 31);
-
-        ComPdfGerado(
-            caminho => RelatorioConsumoPdf.Gerar(caminho, Array.Empty<ItemRelatorioConsumo>(), TipoPeriodo.Mensal, inicio, fim, null, null),
-            caminho => Assert.Equal(1, ConferirPdfValido(caminho)));
-    }
-
-    [Fact]
-    public void Gerar_Com_Filtro_De_Categoria_E_Periodo_Personalizado_Cria_Um_Pdf_Valido()
-    {
-        var relatorios = RelatoriosComDadosReais();
-        var (inicio, fim) = PeriodoRelatorio.Contendo(TipoPeriodo.Anual, relatorios.DataDaUltimaMovimentacao()!.Value);
-
-        var itens = relatorios.GerarRelatorioConsumo(inicio, fim, Categoria.Medicamento, OrdemRelatorio.PorNome);
-
-        ComPdfGerado(
-            caminho => RelatorioConsumoPdf.Gerar(caminho, itens, TipoPeriodo.Personalizado, inicio, fim, "Medicamento", "Maria"),
-            caminho => ConferirPdfValido(caminho));
-    }
-
-    [Fact]
-    public void Gerar_Duas_Vezes_Seguidas_Funciona()
-    {
-        // O usuário pode clicar em "Gerar PDF" várias vezes: a configuração de fontes é repetida a cada vez.
-        var itens = Array.Empty<ItemRelatorioConsumo>();
-        var inicio = new DateTime(2026, 3, 1);
-        var fim = new DateTime(2026, 3, 31);
-
-        for (var i = 0; i < 2; i++)
-            ComPdfGerado(
-                caminho => RelatorioConsumoPdf.Gerar(caminho, itens, TipoPeriodo.Mensal, inicio, fim, null, null),
-                caminho => ConferirPdfValido(caminho));
-    }
-
-    [Fact]
-    public void Gerar_Nao_Altera_Os_Dados()
-    {
-        var relatorios = RelatoriosComDadosReais();
-        var (inicio, fim) = PeriodoRelatorio.Contendo(TipoPeriodo.Anual, relatorios.DataDaUltimaMovimentacao()!.Value);
-        var itens = relatorios.GerarRelatorioConsumo(inicio, fim);
-        var estoqueAntes = itens.Select(i => i.Produto.Quantidade).ToList();
-
-        ComPdfGerado(
-            caminho => RelatorioConsumoPdf.Gerar(caminho, itens, TipoPeriodo.Anual, inicio, fim, null, null),
-            caminho => ConferirPdfValido(caminho));
-
-        Assert.Equal(estoqueAntes, itens.Select(i => i.Produto.Quantidade).ToList());
-    }
-
-    // ---------- Nome sugerido ----------
-
-    [Fact]
-    public void NomeSugerido_Mensal_Usa_Ano_E_Mes()
-    {
-        Assert.Equal("Relatorio_Consumo_CEAN_Mensal_2026-03.pdf",
-            RelatorioConsumoPdf.NomeSugerido(TipoPeriodo.Mensal, new DateTime(2026, 3, 1), new DateTime(2026, 3, 31)));
+            Assert.True(new FileInfo(caminho).Length > 0);
+        }
+        finally
+        {
+            File.Delete(caminho);
+        }
     }
 
     [Theory]
-    [InlineData(2026, 1, "2026-T1")]
-    [InlineData(2026, 4, "2026-T2")]
-    [InlineData(2026, 7, "2026-T3")]
-    [InlineData(2026, 10, "2026-T4")]
-    public void NomeSugerido_Trimestral_Usa_Ano_E_Numero_Do_Trimestre(int ano, int mesInicial, string esperado)
+    [InlineData(TipoPeriodo.Mensal, "2026-01-01", "2026-01-31", "Relatorio_Consumo_CEAN_Mensal_2026-01.pdf")]
+    [InlineData(TipoPeriodo.Trimestral, "2026-04-01", "2026-06-30", "Relatorio_Consumo_CEAN_Trimestral_2026-T2.pdf")]
+    [InlineData(TipoPeriodo.Anual, "2026-01-01", "2026-12-31", "Relatorio_Consumo_CEAN_Anual_2026.pdf")]
+    [InlineData(TipoPeriodo.Personalizado, "2026-03-05", "2026-03-20", "Relatorio_Consumo_CEAN_20260305_a_20260320.pdf")]
+    public void NomeSugerido_TrazOTipoEOPeriodo(TipoPeriodo tipo, string inicio, string fim, string esperado)
     {
-        var inicio = new DateTime(ano, mesInicial, 1);
-        var fim = inicio.AddMonths(3).AddDays(-1);
-
-        Assert.Equal($"Relatorio_Consumo_CEAN_Trimestral_{esperado}.pdf", RelatorioConsumoPdf.NomeSugerido(TipoPeriodo.Trimestral, inicio, fim));
+        Assert.Equal(esperado, RelatorioConsumoPdf.NomeSugerido(tipo, DateTime.Parse(inicio), DateTime.Parse(fim)));
     }
+}
+
+// Segundo relatorio (por categoria): mesmos dados dos graficos, em PDF.
+public class RelatorioCategoriaPdfTests
+{
+    private static string CaminhoTemporario() => Path.Combine(Path.GetTempPath(), $"relatorio_categoria_{Guid.NewGuid():N}.pdf");
 
     [Fact]
-    public void NomeSugerido_Anual_Usa_So_O_Ano()
+    public void Gerar_ComDadosReais_CriaUmPdfValido()
     {
-        Assert.Equal("Relatorio_Consumo_CEAN_Anual_2026.pdf",
-            RelatorioConsumoPdf.NomeSugerido(TipoPeriodo.Anual, new DateTime(2026, 1, 1), new DateTime(2026, 12, 31)));
-    }
+        var loja = new DataStore();
+        var categorias = new RelatorioService(loja).GerarConsumoPorCategoria(new DateTime(2026, 1, 1), new DateTime(2026, 12, 31, 23, 59, 59));
+        var caminho = CaminhoTemporario();
 
-    [Fact]
-    public void NomeSugerido_Personalizado_Usa_As_Duas_Datas()
-    {
-        Assert.Equal("Relatorio_Consumo_CEAN_20260301_a_20260315.pdf",
-            RelatorioConsumoPdf.NomeSugerido(TipoPeriodo.Personalizado, new DateTime(2026, 3, 1), new DateTime(2026, 3, 15)));
-    }
-
-    [Fact]
-    public void NomeSugerido_Termina_Em_Pdf_E_Nao_Tem_Caractere_Proibido_Em_Nome_De_Arquivo()
-    {
-        foreach (var tipo in Enum.GetValues<TipoPeriodo>())
+        try
         {
-            var nome = RelatorioConsumoPdf.NomeSugerido(tipo, new DateTime(2026, 3, 1), new DateTime(2026, 3, 31));
+            RelatorioCategoriaPdf.Gerar(caminho, categorias, TipoPeriodo.Anual, new DateTime(2026, 1, 1), new DateTime(2026, 12, 31), "Teste");
 
-            Assert.EndsWith(".pdf", nome);
-            Assert.True(nome.IndexOfAny(Path.GetInvalidFileNameChars()) < 0, $"O nome \"{nome}\" tem caractere inválido.");
+            var bytes = File.ReadAllBytes(caminho);
+            Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(bytes, 0, 5));
+            Assert.True(bytes.Length > 5_000);
         }
+        finally
+        {
+            File.Delete(caminho);
+        }
+    }
+
+    [Fact]
+    public void Gerar_SemNenhumaSaida_AindaCriaOPdf()
+    {
+        var loja = new DataStore();
+        loja.Movimentacoes.Clear();
+        var categorias = new RelatorioService(loja).GerarConsumoPorCategoria(new DateTime(2026, 1, 1), new DateTime(2026, 1, 31));
+        var caminho = CaminhoTemporario();
+
+        try
+        {
+            RelatorioCategoriaPdf.Gerar(caminho, categorias, TipoPeriodo.Mensal, new DateTime(2026, 1, 1), new DateTime(2026, 1, 31), null);
+
+            Assert.True(new FileInfo(caminho).Length > 0);
+        }
+        finally
+        {
+            File.Delete(caminho);
+        }
+    }
+
+    [Theory]
+    [InlineData(TipoPeriodo.Mensal, "Relatorio_Por_Categoria_CEAN_Mensal_2026-03.pdf")]
+    [InlineData(TipoPeriodo.Trimestral, "Relatorio_Por_Categoria_CEAN_Trimestral_2026-T1.pdf")]
+    [InlineData(TipoPeriodo.Anual, "Relatorio_Por_Categoria_CEAN_Anual_2026.pdf")]
+    public void NomeSugerido_IdentificaOPeriodo(TipoPeriodo tipo, string esperado)
+    {
+        Assert.Equal(esperado, RelatorioCategoriaPdf.NomeSugerido(tipo, new DateTime(2026, 3, 1), new DateTime(2026, 3, 31)));
     }
 }

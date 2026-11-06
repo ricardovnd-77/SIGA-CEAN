@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:SigaCean.Presentation.ViewModels"
+             xmlns:views="clr-namespace:SigaCean.Presentation.Views"
+             x:Class="SigaCean.Presentation.Views.EstoquePage"
+             Title="Estoque">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28" Spacing="18">
+
+            <views:CabecalhoView x:Name="CabecalhoControl" />
+
+            <views:AvisoBanner x:Name="AvisoBannerControl" />
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Estoque" Style="{StaticResource PageTitle}" />
+                <Label Text="Consulte a situação dos produtos. Toque em um produto para ver os detalhes." Style="{StaticResource PageSubtitle}" />
+            </VerticalStackLayout>
+
+            <FlexLayout x:Name="AcoesLayout" JustifyContent="Start" Wrap="Wrap" AlignItems="Start" Margin="-4,-8,0,0">
+                <Button Text="＋ Cadastrar produto" Style="{StaticResource PrimaryButton}" Clicked="OnNovoProdutoClicked" Margin="4" />
+                <Button Text="＋ Entrada" Style="{StaticResource GreenButton}" Clicked="OnEntradaClicked" Margin="4" />
+                <Button x:Name="SaidaButton" Text="− Saída" Style="{StaticResource OrangeButton}" Clicked="OnSaidaClicked" Margin="4" />
+                <Button Text="Ajuste de balanço" Clicked="OnAjusteClicked" Margin="4" />
+            </FlexLayout>
+
+            <Border Padding="16">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Produtos em estoque" Style="{StaticResource CardTitle}" />
+                    <Grid ColumnDefinitions="*,240" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="4">
+                        <Label Grid.Row="0" Grid.Column="0" Text="Pesquisar por nome" Style="{StaticResource FieldLabel}" />
+                        <Label Grid.Row="0" Grid.Column="1" Text="Categoria" Style="{StaticResource FieldLabel}" />
+                        <Entry Grid.Row="1" Grid.Column="0" x:Name="PesquisaEntry" Placeholder="Digite o nome do produto..."
+                               SemanticProperties.Description="Pesquisar produto por nome" TextChanged="OnPesquisaTextChanged" />
+                        <Picker Grid.Row="1" Grid.Column="1" x:Name="CategoriaFiltroPicker" Title="Todas as categorias"
+                                SemanticProperties.Description="Filtrar por categoria" SelectedIndexChanged="OnFiltroChanged" />
+                    </Grid>
+
+                    <Label Text="Situação" Style="{StaticResource FieldLabel}" />
+                    <FlexLayout x:Name="SituacaoChipsLayout" Wrap="Wrap" JustifyContent="Start" Margin="-3,-6,0,0" />
+
+                    <Label x:Name="ResultadoLabel" Style="{StaticResource MutedLabel}" />
+
+                    <CollectionView x:Name="ProdutosCollectionView">
+                        <CollectionView.EmptyView>
+                            <Label Text="Nenhum produto encontrado. Ajuste a pesquisa ou os filtros." Style="{StaticResource MutedLabel}" Padding="0,12" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ProdutoEstoqueItem">
+                                <Border Margin="0,4" Padding="12">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnProdutoTapped" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="10,*,Auto" ColumnSpacing="12">
+
+                                        <BoxView Grid.Column="0" Color="{Binding CorSaude}" WidthRequest="8" CornerRadius="4" />
+
+                                        <VerticalStackLayout Grid.Column="1" Spacing="3">
+                                            <Label Text="{Binding Nome}" FontAttributes="Bold" />
+                                            <Label Text="{Binding Categoria}" Style="{StaticResource MutedLabel}" />
+                                            <FlexLayout Wrap="Wrap" Margin="0,0,0,0">
+                                                <Label Text="SEM ESTOQUE" IsVisible="{Binding MostrarAlertaSemEstoque}" TextColor="{StaticResource Red}" FontSize="12" FontAttributes="Bold" Margin="0,0,10,0" />
+                                                <Label Text="VENCIDO" IsVisible="{Binding MostrarAlertaVencido}" TextColor="{StaticResource Red}" FontSize="12" FontAttributes="Bold" Margin="0,0,10,0" />
+                                                <Label Text="Validade próxima" IsVisible="{Binding MostrarAlertaValidadeProxima}" TextColor="{StaticResource Orange}" FontSize="12" FontAttributes="Bold" Margin="0,0,10,0" />
+                                                <Label Text="Estoque crítico" IsVisible="{Binding MostrarAlertaCritico}" TextColor="{StaticResource Red}" FontSize="12" FontAttributes="Bold" Margin="0,0,10,0" />
+                                            </FlexLayout>
+                                            <Label Text="{Binding ValidadeTexto}" IsVisible="{Binding MostrarValidade}" TextColor="{Binding CorValidade}" FontSize="12" />
+                                        </VerticalStackLayout>
+
+                                        <VerticalStackLayout Grid.Column="2" HorizontalOptions="End" Spacing="1">
+                                            <Label Text="{Binding QuantidadeAtual}" FontAttributes="Bold" FontSize="20" HorizontalTextAlignment="End" />
+                                            <Label Text="em estoque" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="End" />
+                                            <Label Text="{Binding MinimoTexto}" IsVisible="{Binding MostrarMinimo}" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="End" />
+                                            <Label Text="{Binding PercentualTexto}" IsVisible="{Binding MostrarMinimo}" FontSize="12" TextColor="{Binding CorSaude}" HorizontalTextAlignment="End" />
+                                        </VerticalStackLayout>
+
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

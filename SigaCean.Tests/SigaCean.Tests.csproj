@@ -1,37 +1,38 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<IsPackable>false</IsPackable>
-		<IsTestProject>true</IsTestProject>
-		<RootNamespace>SigaCean.Tests</RootNamespace>
-	</PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
 
-	<!-- Os testes compilam DIRETO os arquivos do aplicativo (sem referenciar o projeto MAUI).
-	     Só Models, Data e Services entram: nada de telas, nada de MAUI. -->
-	<ItemGroup>
-		<Compile Include="..\Models\**\*.cs" LinkBase="Models" />
-		<Compile Include="..\Data\**\*.cs" LinkBase="Data" />
-		<Compile Include="..\Services\**\*.cs" LinkBase="Services" />
-		<Compile Include="..\Views\Rotulos.cs" LinkBase="Views" />
-		<Compile Include="..\Reports\**\*.cs" LinkBase="Reports" />
-		<Compile Include="..\Views\TextosDeEstoque.cs" LinkBase="Views" />
-		<Compile Include="..\Views\TextosDeConsumo.cs" LinkBase="Views" />
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-		<PackageReference Include="xunit" Version="2.9.3" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-		<PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
-		<!-- Versão corrigida da dependência transitiva do PDFsharp (avisos de vulnerabilidade NU1902/NU1903). -->
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Camadas sem dependência de MAUI, compiladas direto do projeto do app. -->
+  <ItemGroup>
+    <Compile Include="..\SigaCean.Maui\Domain\**\*.cs" LinkBase="Domain" />
+    <Compile Include="..\SigaCean.Maui\Services\**\*.cs" LinkBase="Services" />
+    <Compile Include="..\SigaCean.Maui\Infrastructure\**\*.cs" LinkBase="Infrastructure" />
+    <Compile Include="..\SigaCean.Maui\Presentation\Reports\**\*.cs" LinkBase="Reports" />
+    <Compile Include="..\SigaCean.Maui\Presentation\Rotulos.cs" LinkBase="Presentation" />
+    <Compile Include="..\SigaCean.Maui\Presentation\TextosDeEstoque.cs" LinkBase="Presentation" />
+    <Compile Include="..\SigaCean.Maui\Presentation\TextosDeConsumo.cs" LinkBase="Presentation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
+		<!-- Versão corrigida da dependência transitiva do PDFsharp (avisos NU1902/NU1903). -->
 		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Using Include="Xunit" />
-	</ItemGroup>
+  </ItemGroup>
 
 </Project>

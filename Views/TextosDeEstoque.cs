@@ -8,6 +8,7 @@ public enum FiltroDeSituacao
 {
     Todos,
     SemEstoque,
+    Critico,
     AbaixoDoMinimo,
     Vencidos,
     ValidadeProxima
@@ -70,6 +71,7 @@ public static class TextosDeEstoque
     {
         FiltroDeSituacao.Todos => "Todos",
         FiltroDeSituacao.SemEstoque => "Sem estoque",
+        FiltroDeSituacao.Critico => "Estoque crítico",
         FiltroDeSituacao.AbaixoDoMinimo => "Abaixo do mínimo",
         FiltroDeSituacao.Vencidos => "Vencidos",
         FiltroDeSituacao.ValidadeProxima => "Validade próxima",
@@ -78,10 +80,12 @@ public static class TextosDeEstoque
 
     // Liga o botão de filtro à situação que o produto JÁ TEM. As quatro situações vêm do EstoqueService
     // (a tela só repassa); aqui só se escolhe qual delas o filtro olha.
-    public static bool Atende(FiltroDeSituacao filtro, bool semEstoque, bool abaixoDoMinimo, bool vencido, bool validadeProxima) =>
+    public static bool Atende(FiltroDeSituacao filtro, bool semEstoque, bool abaixoDoMinimo, bool vencido, bool validadeProxima,
+        bool critico = false) =>
         filtro switch
         {
             FiltroDeSituacao.SemEstoque => semEstoque,
+            FiltroDeSituacao.Critico => critico,
             FiltroDeSituacao.AbaixoDoMinimo => abaixoDoMinimo,
             FiltroDeSituacao.Vencidos => vencido,
             FiltroDeSituacao.ValidadeProxima => validadeProxima,

@@ -32,6 +32,13 @@ public class EstoqueService
     public bool EstaAbaixoDoMinimo(Produto produto) =>
         produto.QuantidadeMinima is not null && produto.Quantidade <= produto.QuantidadeMinima.Value;
 
+    // Estoque crítico: quantidade <= metade do mínimo. Só existe para produto com mínimo cadastrado. Quem calcula é só
+    // este método (telas e filtros perguntam aqui).
+    public const double LimiarCriticoPercentual = 0.5;
+
+    public bool EstaCritico(Produto produto) =>
+        produto.QuantidadeMinima is not null && produto.Quantidade <= produto.QuantidadeMinima.Value * LimiarCriticoPercentual;
+
     public SituacaoEstoque VerificarSituacao(Produto produto) =>
         EstaSemEstoque(produto) ? SituacaoEstoque.SemEstoque
         : EstaAbaixoDoMinimo(produto) ? SituacaoEstoque.AbaixoDoMinimo

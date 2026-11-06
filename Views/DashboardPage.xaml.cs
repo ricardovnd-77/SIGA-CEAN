@@ -27,6 +27,7 @@ public partial class DashboardPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        EntradaButton.IsVisible = _usuarios.EhAdministrativo; // o Veterinário só tem o atalho de saída
         Atualizar();
     }
 

@@ -6,7 +6,7 @@ namespace SigaCean;
 
 // Menu lateral. O que aparece depende do perfil de quem entrou:
 //   Administrativo -> todas as áreas
-//   Veterinário    -> consulta o estoque e registra saídas (não recebe as demais permissões administrativas)
+//   Veterinário    -> Painel, Estoque e Histórico só para consulta, mais o registro de saídas (sem as demais permissões administrativas)
 //
 // Também é daqui que as telas navegam umas para as outras (IrParaEstoque, IrParaEntrada...): cada método só funciona
 // se o perfil de quem entrou tem aquela área no menu, então o Veterinário nunca chega numa tela administrativa.
@@ -25,8 +25,8 @@ public partial class AppShell : Shell
         _servicos = servicos;
         _usuarios = usuarios;
 
-        if (usuarios.EhAdministrativo)
-            Items.Add(CriarItem("Painel", servicos.GetRequiredService<DashboardPage>()));
+        // Painel e Histórico: os dois perfis consultam (o Veterinário não vê o atalho de entrada nem os botões de corrigir/cancelar).
+        Items.Add(CriarItem("Painel", servicos.GetRequiredService<DashboardPage>()));
 
         Items.Add(CriarItem("Estoque", servicos.GetRequiredService<EstoquePage>()));
 
@@ -40,9 +40,10 @@ public partial class AppShell : Shell
         if (usuarios.PodeRegistrarSaida)
             Items.Add(CriarItem("Saída", servicos.GetRequiredService<SaidaPage>()));
 
+        Items.Add(CriarItem("Histórico", servicos.GetRequiredService<HistoricoPage>()));
+
         if (usuarios.EhAdministrativo)
         {
-            Items.Add(CriarItem("Histórico", servicos.GetRequiredService<HistoricoPage>()));
             Items.Add(CriarItem("Relatórios", servicos.GetRequiredService<RelatoriosPage>()));
             Items.Add(CriarItem("Gráficos", servicos.GetRequiredService<GraficosPage>()));
             Items.Add(CriarItem("Rel. por categoria", servicos.GetRequiredService<RelatorioCategoriaPage>()));

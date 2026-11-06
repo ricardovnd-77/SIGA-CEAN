@@ -22,6 +22,7 @@ public class ProdutoLinha
         var situacao = estoque.VerificarSituacao(produto);
         SemEstoque = situacao == SituacaoEstoque.SemEstoque;
         AbaixoDoMinimo = situacao == SituacaoEstoque.AbaixoDoMinimo;
+        Critico = estoque.EstaCritico(produto);
         Vencido = estoque.TemValidadeVencida(produto, hoje);
         ValidadeProxima = estoque.TemValidadeProxima(produto, hoje);
 
@@ -53,13 +54,15 @@ public class ProdutoLinha
 
     public bool SemEstoque { get; }
     public bool AbaixoDoMinimo { get; }
+    public bool Critico { get; }
+    public bool MostrarAlertaCritico => Critico && !SemEstoque; // sem estoque já tem o seu próprio selo
     public bool Vencido { get; }
     public bool ValidadeProxima { get; }
     public bool PrecisaDeAtencao => SemEstoque || AbaixoDoMinimo || Vencido || ValidadeProxima;
 
     // Este produto aparece no filtro escolhido? (as situações já foram perguntadas ao EstoqueService no construtor)
     public bool Atende(FiltroDeSituacao filtro) =>
-        TextosDeEstoque.Atende(filtro, SemEstoque, AbaixoDoMinimo, Vencido, ValidadeProxima);
+        TextosDeEstoque.Atende(filtro, SemEstoque, AbaixoDoMinimo, Vencido, ValidadeProxima, Critico);
 
     // Os saldos com estoque, na ordem em que SAEM (FEFO). A ordem é decidida pelo EstoqueService: a previsão de retirar o
     // estoque inteiro devolve exatamente essa fila. Sem estoque não há o que prever (a previsão recusa quantidade zero).

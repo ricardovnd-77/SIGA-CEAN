@@ -47,6 +47,9 @@
                                     <Border Style="{StaticResource Selo}" BackgroundColor="#FDEFD8" IsVisible="{Binding AbaixoDoMinimo}">
                                         <Label Text="Abaixo do mínimo" Style="{StaticResource SeloTexto}" TextColor="#B96F0A" />
                                     </Border>
+                                    <Border Style="{StaticResource Selo}" BackgroundColor="#FBE5E5" IsVisible="{Binding MostrarAlertaCritico}">
+                                        <Label Text="Estoque crítico" Style="{StaticResource SeloTexto}" TextColor="{StaticResource Red}" />
+                                    </Border>
                                     <Border Style="{StaticResource Selo}" BackgroundColor="#FBE5E5" IsVisible="{Binding Vencido}">
                                         <Label Text="Validade vencida" Style="{StaticResource SeloTexto}" TextColor="{StaticResource Red}" />
                                     </Border>

@@ -18,6 +18,7 @@
 		<Compile Include="..\Views\Rotulos.cs" LinkBase="Views" />
 		<Compile Include="..\Reports\**\*.cs" LinkBase="Reports" />
 		<Compile Include="..\Views\TextosDeEstoque.cs" LinkBase="Views" />
+		<Compile Include="..\Views\TextosDeConsumo.cs" LinkBase="Views" />
 	</ItemGroup>
 
 	<ItemGroup>

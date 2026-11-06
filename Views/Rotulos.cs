@@ -7,6 +7,9 @@ namespace SigaCean.Views;
 // escreverem igual. Aqui só se FORMATA texto: nenhuma regra de estoque é decidida neste arquivo.
 public static class Rotulos
 {
+    // Ordem em que as categorias aparecem nas telas e nos gráficos (a mesma do enum).
+    public static readonly Categoria[] Categorias = Enum.GetValues<Categoria>();
+
     public static string NomeDaCategoria(Categoria categoria) => categoria switch
     {
         Categoria.Medicamento => "Medicamento",

@@ -23,7 +23,7 @@ public class MovimentacaoService
 
     // Entrada: aumenta o estoque (com a validade, se houver) e grava a movimentação.
     public Movimentacao RegistrarEntrada(Produto produto, int quantidade, TipoOrigemEntrada tipoOrigem,
-        string? origem, string? numeroAF, string? documento, DateOnly? dataValidade,
+        string? origem, string? identificacaoOrigem, string? documento, DateOnly? dataValidade,
         Usuario? responsavel, string? observacao = null)
     {
         ValidarProdutoAtivo(produto);
@@ -40,7 +40,7 @@ public class MovimentacaoService
             Observacao = LimparTexto(observacao),
             TipoOrigem = tipoOrigem,
             Origem = LimparTexto(origem),
-            NumeroAF = LimparTexto(numeroAF),
+            IdentificacaoOrigem = LimparTexto(identificacaoOrigem),
             Documento = LimparTexto(documento),
             DataValidade = dataValidade
         };

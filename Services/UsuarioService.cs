@@ -17,6 +17,9 @@ public class UsuarioService
 
     public bool EhAdministrativo => UsuarioLogado?.Perfil == Perfil.Administrativo;
 
+    // Os dois perfis registram saída; entrada, produtos, ajuste, correção, relatórios e gráficos são só do Administrativo.
+    public bool PodeRegistrarSaida => UsuarioLogado is not null;
+
     // Devolve o usuário se login e senha conferem; senão devolve null.
     public Usuario? Login(string login, string senha)
     {

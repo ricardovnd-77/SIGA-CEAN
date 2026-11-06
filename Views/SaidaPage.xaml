@@ -8,10 +8,10 @@
         <VerticalStackLayout Padding="28" Spacing="18" MaximumWidthRequest="820">
 
             <Label Text="Registrar Saída" Style="{StaticResource PageTitle}" />
-            <Label Text="Retire produtos do estoque ou corrija a quantidade depois de uma contagem (ajuste de balanço)." Style="{StaticResource PageSubtitle}" />
+            <Label x:Name="SubtituloLabel" Text="Retire produtos do estoque ou corrija a quantidade depois de uma contagem (ajuste de balanço)." Style="{StaticResource PageSubtitle}" />
 
             <!-- Escolha entre os dois tipos de operação. -->
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <Grid x:Name="ModoLayout" ColumnDefinitions="*,*" ColumnSpacing="10">
                 <Button x:Name="SaidaModoButton" Grid.Column="0" Text="Saída" Clicked="OnModoSaidaClicked" />
                 <Button x:Name="AjusteModoButton" Grid.Column="1" Text="Ajuste de balanço" Clicked="OnModoAjusteClicked" />
             </Grid>

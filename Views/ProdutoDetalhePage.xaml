@@ -18,9 +18,9 @@
 
             <!-- Só o Administrativo vê estas ações; o Veterinário apenas consulta. -->
             <HorizontalStackLayout x:Name="AcoesLayout" Spacing="10">
-                <Button Text="+ Entrada" Style="{StaticResource GreenButton}" Clicked="OnEntradaClicked" />
-                <Button Text="− Saída" Style="{StaticResource OrangeButton}" Clicked="OnSaidaClicked" />
-                <Button Text="Editar" Clicked="OnEditarClicked" />
+                <Button x:Name="EntradaButton" Text="+ Entrada" Style="{StaticResource GreenButton}" Clicked="OnEntradaClicked" />
+                <Button x:Name="SaidaButton" Text="− Saída" Style="{StaticResource OrangeButton}" Clicked="OnSaidaClicked" />
+                <Button x:Name="EditarButton" Text="Editar" Clicked="OnEditarClicked" />
             </HorizontalStackLayout>
 
             <!-- Situação: a quantidade, o mínimo e os selos. Tudo vem do ProdutoLinha (que pergunta ao EstoqueService). -->
@@ -40,6 +40,9 @@
                                 </Border>
                                 <Border Style="{StaticResource Selo}" BackgroundColor="#FDEFD8" IsVisible="{Binding AbaixoDoMinimo}" Margin="0,0,6,6">
                                     <Label Text="Abaixo do mínimo" Style="{StaticResource SeloTexto}" TextColor="#B96F0A" />
+                                </Border>
+                                <Border Style="{StaticResource Selo}" BackgroundColor="#FBE5E5" IsVisible="{Binding MostrarAlertaCritico}" Margin="0,0,6,6">
+                                    <Label Text="Estoque crítico" Style="{StaticResource SeloTexto}" TextColor="{StaticResource Red}" />
                                 </Border>
                                 <Border Style="{StaticResource Selo}" BackgroundColor="#FBE5E5" IsVisible="{Binding Vencido}" Margin="0,0,6,6">
                                     <Label Text="Validade vencida" Style="{StaticResource SeloTexto}" TextColor="{StaticResource Red}" />

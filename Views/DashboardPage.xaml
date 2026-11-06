@@ -13,7 +13,7 @@
 
             <!-- Atalhos para registrar uma entrada ou uma saída. -->
             <HorizontalStackLayout Spacing="10">
-                <Button Text="+ Entrada" Style="{StaticResource GreenButton}" Clicked="OnEntradaClicked" />
+                <Button x:Name="EntradaButton" Text="+ Entrada" Style="{StaticResource GreenButton}" Clicked="OnEntradaClicked" />
                 <Button Text="− Saída" Style="{StaticResource OrangeButton}" Clicked="OnSaidaClicked" />
             </HorizontalStackLayout>
 

@@ -26,7 +26,7 @@
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="1" Spacing="6">
                             <Label Text="Origem *" Style="{StaticResource FieldLabel}" />
-                            <Picker x:Name="OrigemPicker" Title="Compra, concessão ou doação" SelectedIndexChanged="OnOrigemChanged" />
+                            <Picker x:Name="OrigemPicker" Title="Compra, concessão ou doação" />
                         </VerticalStackLayout>
                     </Grid>
 
@@ -36,9 +36,9 @@
                     </VerticalStackLayout>
 
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
-                        <VerticalStackLayout x:Name="AFPainel" Grid.Column="1" Spacing="6">
-                            <Label Text="Número da AF (compra)" Style="{StaticResource FieldLabel}" />
-                            <Entry x:Name="AFEntry" Placeholder="Opcional" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="6">
+                            <Label Text="Identificação de origem" Style="{StaticResource FieldLabel}" />
+                            <Entry x:Name="IdentificacaoOrigemEntry" Placeholder="Número ou código da origem (opcional)" />
                         </VerticalStackLayout>
                         <VerticalStackLayout Grid.Column="0" Spacing="6">
                             <Label Text="Documento" Style="{StaticResource FieldLabel}" />

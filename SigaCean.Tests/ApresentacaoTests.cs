@@ -174,9 +174,10 @@ public class ApresentacaoTests : IDisposable
     public void NomeDoFiltro_Cobre_Todos_Os_Filtros_Sem_Texto_Tecnico()
     {
         // Se alguém criar um filtro novo e esquecer o texto, o nome em código apareceria no botão.
-        Assert.Equal(5, Enum.GetValues<FiltroDeSituacao>().Length);
+        Assert.Equal(6, Enum.GetValues<FiltroDeSituacao>().Length);
         Assert.DoesNotContain("ValidadeProxima", Enum.GetValues<FiltroDeSituacao>().Select(TextosDeEstoque.NomeDoFiltro));
         Assert.DoesNotContain("SemEstoque", Enum.GetValues<FiltroDeSituacao>().Select(TextosDeEstoque.NomeDoFiltro));
+        Assert.DoesNotContain("Critico", Enum.GetValues<FiltroDeSituacao>().Select(TextosDeEstoque.NomeDoFiltro));
     }
 
     // ---------- Qual filtro olha qual situação ----------

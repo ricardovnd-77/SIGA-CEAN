@@ -3,7 +3,7 @@ using SigaCean.Services;
 namespace SigaCean.Views;
 
 // Ficha de consulta de um produto: situação, saldos por validade (na ordem FEFO) e as últimas movimentações.
-// Os dois perfis consultam; as ações (Entrada, Saída, Editar) só aparecem para o Administrativo.
+// Os dois perfis consultam e registram saída; Entrada e Editar só aparecem para o Administrativo.
 // A tela só mostra: a situação vem do EstoqueService (via ProdutoLinha) e o histórico vem do MovimentacaoService.
 public partial class ProdutoDetalhePage : ContentPage
 {
@@ -48,7 +48,11 @@ public partial class ProdutoDetalhePage : ContentPage
 
         NomeLabel.Text = produto.Nome;
         CategoriaLabel.Text = TextosDeEstoque.CategoriaComApresentacao(produto);
-        AcoesLayout.IsVisible = _usuarios.EhAdministrativo;
+        // Os dois perfis registram saída; entrada e edição só aparecem para o Administrativo.
+        EntradaButton.IsVisible = _usuarios.EhAdministrativo;
+        EditarButton.IsVisible = _usuarios.EhAdministrativo;
+        SaidaButton.IsVisible = _usuarios.PodeRegistrarSaida;
+        AcoesLayout.IsVisible = SaidaButton.IsVisible;
 
         SituacaoCard.BindingContext = linha;
         MinimoLabel.Text = TextosDeEstoque.MinimoNaFicha(produto.QuantidadeMinima);

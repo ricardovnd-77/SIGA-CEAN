@@ -1,6 +1,7 @@
-# Pastas geradas pelo build e pelo Visual Studio
+﻿# Pastas geradas pelo build e pelo Visual Studio
 bin/
 obj/
 .vs/
 *.user
 *.suo
+

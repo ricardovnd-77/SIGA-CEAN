@@ -1,69 +1,74 @@
-using SigaCean.Models;
+using SigaCean.Domain;
+using SigaCean.Infrastructure;
 using SigaCean.Services;
 
 namespace SigaCean.Tests;
 
-// Pedido do orientador do CEAN: o Veterinário também registra saída. Entrada, produtos, ajuste, correção, cancelamento,
-// relatórios e gráficos continuam só do Administrativo.
+// Pedido do orientador do CEAN: o Veterinario tambem registra saida; as telas seguem as regras de Domain/Permissoes.
 public class PermissoesPorPerfilTests
 {
-    private readonly Cenario _c = new();
+    private readonly DataStore _dataStore = new();
+    private readonly MovimentacaoService _movimentacoes;
+    private readonly ProdutoService _produtos;
 
-    private UsuarioService EntrarComo(string login, string senha)
+    public PermissoesPorPerfilTests()
     {
-        var usuarios = new UsuarioService(_c.Dados);
-        Assert.NotNull(usuarios.Login(login, senha));
-        return usuarios;
+        _dataStore.Produtos.Clear();
+        _dataStore.Movimentacoes.Clear();
+        _movimentacoes = new MovimentacaoService(_dataStore);
+        _produtos = new ProdutoService(_dataStore);
+    }
+
+    private static Usuario NovoUsuario(Perfil perfil) =>
+        new() { Nome = perfil.ToString(), LoginUsuario = perfil.ToString().ToLower(), Senha = "x", Perfil = perfil };
+
+    [Fact]
+    public void Veterinario_RegistraSaida_ENaoPodeAdministrar()
+    {
+        var vet = NovoUsuario(Perfil.Veterinario);
+
+        Assert.True(Permissoes.PodeRegistrarSaida(vet));
+        Assert.False(Permissoes.PodeAdministrar(vet));
     }
 
     [Fact]
-    public void Veterinario_Registra_Saida_E_Nao_E_Administrativo()
+    public void Administrativo_RegistraSaida_EAdministra()
     {
-        var usuarios = EntrarComo("vet", "vet123");
+        var adm = NovoUsuario(Perfil.Administrativo);
 
-        Assert.True(usuarios.PodeRegistrarSaida);
-        Assert.False(usuarios.EhAdministrativo);
+        Assert.True(Permissoes.PodeRegistrarSaida(adm));
+        Assert.True(Permissoes.PodeAdministrar(adm));
     }
 
     [Fact]
-    public void Administrativo_Registra_Saida_E_Administra()
+    public void SemUsuarioLogado_NaoHaAcoes()
     {
-        var usuarios = EntrarComo("admin", "admin123");
-
-        Assert.True(usuarios.PodeRegistrarSaida);
-        Assert.True(usuarios.EhAdministrativo);
+        Assert.False(Permissoes.PodeRegistrarSaida(null));
+        Assert.False(Permissoes.PodeAdministrar(null));
     }
 
     [Fact]
-    public void Sem_Usuario_Logado_Nao_Ha_Acoes()
+    public void SaidaDoVeterinario_SubtraiDoEstoque_ERegistraQuemFez()
     {
-        var usuarios = new UsuarioService(_c.Dados);
+        var vet = NovoUsuario(Perfil.Veterinario);
+        var p = _produtos.Cadastrar("Produto Teste", CategoriaProduto.Medicamento, null, 5);
+        _movimentacoes.RegistrarEntrada(p, 10, TipoOrigemEntrada.Compra, null, null, null, null);
 
-        Assert.False(usuarios.PodeRegistrarSaida);
-        Assert.False(usuarios.EhAdministrativo);
-    }
+        var saida = _movimentacoes.RegistrarSaida(p, 4, "Canil", vet, "Maria");
 
-    [Fact]
-    public void Saida_Do_Veterinario_Subtrai_Do_Estoque_E_Registra_Quem_Fez()
-    {
-        var usuarios = EntrarComo("vet", "vet123");
-        var produto = _c.NovoProdutoComEstoque(10);
-
-        var saida = _c.Movimentacoes.RegistrarSaida(produto, 4, "Canil", "Maria", usuarios.UsuarioLogado);
-
-        Assert.Equal(6, produto.Quantidade);
-        Assert.Same(usuarios.UsuarioLogado, saida.UsuarioResponsavel);
+        Assert.Equal(6, p.QuantidadeAtual);
+        Assert.Same(vet, saida.UsuarioResponsavel);
         Assert.Equal("Maria", saida.RetiradoPor);
     }
 
     [Fact]
-    public void Saida_Do_Veterinario_Acima_Do_Saldo_Continua_Recusada()
+    public void SaidaDoVeterinario_AcimaDoSaldo_ContinuaRecusada()
     {
-        var usuarios = EntrarComo("vet", "vet123");
-        var produto = _c.NovoProdutoComEstoque(3);
+        var vet = NovoUsuario(Perfil.Veterinario);
+        var p = _produtos.Cadastrar("Produto Teste", CategoriaProduto.Medicamento, null, 5);
+        _movimentacoes.RegistrarEntrada(p, 3, TipoOrigemEntrada.Compra, null, null, null, null);
 
-        Assert.Throws<InvalidOperationException>(() =>
-            _c.Movimentacoes.RegistrarSaida(produto, 4, "Canil", "Maria", usuarios.UsuarioLogado));
-        Assert.Equal(3, produto.Quantidade);
+        Assert.Throws<InvalidOperationException>(() => _movimentacoes.RegistrarSaida(p, 4, "Canil", vet, "Maria"));
+        Assert.Equal(3, p.QuantidadeAtual);
     }
 }

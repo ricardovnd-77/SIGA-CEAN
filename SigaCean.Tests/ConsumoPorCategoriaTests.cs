@@ -1,242 +1,237 @@
-﻿using SigaCean.Models;
+using SigaCean.Domain;
+using SigaCean.Infrastructure;
+using SigaCean.Presentation;
+using SigaCean.Services;
 
 namespace SigaCean.Tests;
 
+// "Consumo por categoria": alimenta os graficos e o relatorio por categoria. "Uso" = saidas ATIVAS no periodo.
 public class ConsumoPorCategoriaTests
 {
-    private readonly Cenario _c = new();
+    private static readonly DateTime Inicio = DateTime.Today.AddDays(-30);
+    private static readonly DateTime Fim = DateTime.Today.AddDays(1).AddTicks(-1);
 
-    private static readonly DateTime Inicio = new(2026, 10, 1);
-    private static readonly DateTime Fim = new(2026, 10, 31);
-    private static readonly DateTime DentroDoPeriodo = new(2026, 10, 15, 10, 0, 0);
+    private readonly DataStore _dataStore = new();
+    private readonly ProdutoService _produtos;
+    private readonly MovimentacaoService _movimentacoes;
+    private readonly RelatorioService _relatorio;
 
-    private ConsumoPorCategoria Linha(Categoria categoria) =>
-        _c.Relatorios.GerarConsumoPorCategoria(Inicio, Fim).Single(l => l.Categoria == categoria);
+    public ConsumoPorCategoriaTests()
+    {
+        _dataStore.Produtos.Clear(); // cenario proprio, sem os dados reais do CEAN
+        _dataStore.Movimentacoes.Clear();
+        _produtos = new ProdutoService(_dataStore);
+        _movimentacoes = new MovimentacaoService(_dataStore);
+        _relatorio = new RelatorioService(_dataStore);
+    }
 
-    private void Saiu(Produto produto, int quantidade, DateTime? data = null, StatusMovimentacao status = StatusMovimentacao.Ativa) =>
-        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Saida, quantidade, data ?? DentroDoPeriodo, status);
+    private Produto ComEstoque(string nome, int quantidade, CategoriaProduto categoria = CategoriaProduto.Medicamento)
+    {
+        var produto = _produtos.Cadastrar(nome, categoria, null, null);
+        _movimentacoes.RegistrarEntrada(produto, quantidade, TipoOrigemEntrada.Compra, null, null, null, null);
+        return produto;
+    }
 
-    // ---------- Uma linha por categoria ----------
+    private void Saida(Produto produto, int quantidade) =>
+        _movimentacoes.RegistrarSaida(produto, quantidade, "Canil", null, "Maria");
+
+    private ConsumoPorCategoria Linha(CategoriaProduto categoria) =>
+        _relatorio.GerarConsumoPorCategoria(Inicio, Fim).Single(l => l.Categoria == categoria);
 
     [Fact]
-    public void Devolve_Uma_Linha_Para_Cada_Categoria_Mesmo_Sem_Nenhum_Produto()
+    public void SemNadaCadastrado_DevolveUmaLinhaPorCategoria_TodaZerada()
     {
-        var linhas = _c.Relatorios.GerarConsumoPorCategoria(Inicio, Fim);
+        var linhas = _relatorio.GerarConsumoPorCategoria(Inicio, Fim);
 
-        Assert.Equal(Enum.GetValues<Categoria>(), linhas.Select(l => l.Categoria));
+        Assert.Equal(Enum.GetValues<CategoriaProduto>().Length, linhas.Count);
         Assert.All(linhas, l =>
         {
             Assert.Equal(0, l.QuantidadeDeProdutos);
             Assert.Equal(0, l.EstoqueAtual);
             Assert.Equal(0, l.TotalSaidas);
-            Assert.Equal(0, l.ProdutosSemSaida);
             Assert.Null(l.MaisUsado);
             Assert.Null(l.MenosUsado);
-            Assert.Empty(l.ProdutosUsados);
         });
     }
 
     [Fact]
-    public void Cada_Produto_Conta_So_Na_Sua_Categoria()
+    public void EstoqueEQuantidadeDeProdutos_SomamPorCategoria()
     {
-        var remedio = _c.NovoProdutoComEstoque(10, nome: "Dipirona", categoria: Categoria.Medicamento);
-        var racao = _c.NovoProdutoComEstoque(7, nome: "Ração", categoria: Categoria.Alimentar);
-        Saiu(remedio, 4);
-        Saiu(racao, 2);
+        ComEstoque("Dipirona", 10);
+        ComEstoque("Vacina", 5);
+        ComEstoque("Racao", 20, CategoriaProduto.Alimentar);
 
-        var medicamento = Linha(Categoria.Medicamento);
-        var alimentar = Linha(Categoria.Alimentar);
+        var medicamento = Linha(CategoriaProduto.Medicamento);
 
-        Assert.Equal(1, medicamento.QuantidadeDeProdutos);
-        Assert.Equal(10, medicamento.EstoqueAtual);
-        Assert.Equal(4, medicamento.TotalSaidas);
-        Assert.Equal(1, alimentar.QuantidadeDeProdutos);
-        Assert.Equal(7, alimentar.EstoqueAtual);
-        Assert.Equal(2, alimentar.TotalSaidas);
-        Assert.Equal(0, Linha(Categoria.Higiene).TotalSaidas);
-    }
-
-    // ---------- O que conta como uso ----------
-
-    [Fact]
-    public void So_Saidas_Ativas_Do_Periodo_Contam_Como_Uso()
-    {
-        var produto = _c.NovoProduto();
-        Saiu(produto, 5);
-        Saiu(produto, 100, status: StatusMovimentacao.Cancelada);
-        Saiu(produto, 200, status: StatusMovimentacao.Corrigida);
-        Saiu(produto, 9, new DateTime(2026, 9, 30, 23, 59, 59)); // antes do período
-        Saiu(produto, 8, new DateTime(2026, 11, 1)); // depois do período
-        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Entrada, 300, DentroDoPeriodo);
-        _c.AdicionarMovimentacao(produto, TipoMovimentacao.AjusteBalanco, -50, DentroDoPeriodo);
-
-        var linha = Linha(Categoria.Medicamento);
-
-        Assert.Equal(5, linha.TotalSaidas);
-        var usado = Assert.Single(linha.ProdutosUsados);
-        Assert.Same(produto, usado.Produto);
-        Assert.Equal(5, usado.TotalSaidas);
+        Assert.Equal(2, medicamento.QuantidadeDeProdutos);
+        Assert.Equal(15, medicamento.EstoqueAtual);
+        Assert.Equal(20, Linha(CategoriaProduto.Alimentar).EstoqueAtual);
+        Assert.Equal(0, Linha(CategoriaProduto.Higiene).QuantidadeDeProdutos);
     }
 
     [Fact]
-    public void Produto_So_Com_Entrada_Ajuste_Ou_Saida_Cancelada_Fica_Sem_Saida()
+    public void MaisEMenosUsado_SaemDasSaidasDoPeriodo()
     {
-        var produto = _c.NovoProduto();
-        _c.AdicionarMovimentacao(produto, TipoMovimentacao.Entrada, 30, DentroDoPeriodo);
-        _c.AdicionarMovimentacao(produto, TipoMovimentacao.AjusteBalanco, -2, DentroDoPeriodo);
-        Saiu(produto, 6, status: StatusMovimentacao.Cancelada);
+        var dipirona = ComEstoque("Dipirona", 50);
+        var vacina = ComEstoque("Vacina", 50);
+        var soro = ComEstoque("Soro", 50);
+        Saida(dipirona, 10);
+        Saida(dipirona, 5);
+        Saida(vacina, 2);
+        Saida(soro, 7);
 
-        var linha = Linha(Categoria.Medicamento);
+        var linha = Linha(CategoriaProduto.Medicamento);
+
+        Assert.Equal(24, linha.TotalSaidas);
+        Assert.Equal("Dipirona", linha.MaisUsado!.Produto.Nome);
+        Assert.Equal(15, linha.MaisUsado.TotalSaidas);
+        Assert.Equal("Vacina", linha.MenosUsado!.Produto.Nome);
+        Assert.Equal(2, linha.MenosUsado.TotalSaidas);
+        Assert.Equal(new[] { "Dipirona", "Soro", "Vacina" }, linha.ProdutosUsados.Select(c => c.Produto.Nome));
+    }
+
+    [Fact]
+    public void ProdutoSemSaida_NaoEMenosUsado_EEContadoApartir()
+    {
+        var usado = ComEstoque("Usado", 20);
+        var parado = ComEstoque("Parado", 20);
+        Saida(usado, 3);
+
+        var linha = Linha(CategoriaProduto.Medicamento);
+
+        Assert.Equal("Usado", linha.MaisUsado!.Produto.Nome);
+        Assert.Null(linha.MenosUsado); // so um produto teve saida: nao ha com quem comparar
+        Assert.Equal(1, linha.ProdutosSemSaida);
+        Assert.DoesNotContain(linha.ProdutosUsados, c => c.Produto == parado);
+    }
+
+    [Fact]
+    public void EmpateDeSaidas_DesempataPorNome()
+    {
+        var b = ComEstoque("Beta", 20);
+        var a = ComEstoque("Alfa", 20);
+        Saida(b, 4);
+        Saida(a, 4);
+
+        var linha = Linha(CategoriaProduto.Medicamento);
+
+        Assert.Equal("Alfa", linha.MaisUsado!.Produto.Nome);
+        Assert.Equal("Beta", linha.MenosUsado!.Produto.Nome);
+    }
+
+    [Fact]
+    public void SoContamSaidasAtivas_CanceladasECorrigidasFicamDeFora()
+    {
+        var produto = ComEstoque("Dipirona", 50);
+        var cancelada = _movimentacoes.RegistrarSaida(produto, 10, "Canil", null, "Maria");
+        var corrigida = _movimentacoes.RegistrarSaida(produto, 8, "Canil", null, "Maria");
+        Saida(produto, 3);
+        _movimentacoes.Cancelar(cancelada.Id, "Lançada errada");
+        _movimentacoes.Corrigir(corrigida.Id, "Quantidade errada");
+
+        Assert.Equal(3, Linha(CategoriaProduto.Medicamento).TotalSaidas);
+    }
+
+    [Fact]
+    public void EntradasEAjustes_NaoContamComoUso()
+    {
+        var produto = ComEstoque("Dipirona", 10);
+        _movimentacoes.RegistrarEntrada(produto, 30, TipoOrigemEntrada.Compra, null, null, null, null);
+        _movimentacoes.RegistrarAjusteBalanco(produto, 5, null);
+
+        var linha = Linha(CategoriaProduto.Medicamento);
 
         Assert.Equal(0, linha.TotalSaidas);
-        Assert.Equal(1, linha.ProdutosSemSaida);
-        Assert.Empty(linha.ProdutosUsados);
         Assert.Null(linha.MaisUsado);
+        Assert.Equal(1, linha.ProdutosSemSaida);
     }
 
     [Fact]
-    public void O_Dia_Final_Do_Periodo_Entra_Inteiro()
+    public void SaidaForaDoPeriodo_NaoConta()
     {
-        var produto = _c.NovoProduto();
-        Saiu(produto, 3, new DateTime(2026, 10, 31, 23, 59, 59));
+        var produto = ComEstoque("Dipirona", 10);
+        Saida(produto, 4);
 
-        Assert.Equal(3, Linha(Categoria.Medicamento).TotalSaidas);
+        var linhas = _relatorio.GerarConsumoPorCategoria(DateTime.Today.AddYears(-3), DateTime.Today.AddYears(-2));
+
+        Assert.All(linhas, l => Assert.Equal(0, l.TotalSaidas));
     }
 
     [Fact]
-    public void Produto_Inativo_Fica_De_Fora_De_Tudo()
+    public void ProdutoInativo_NaoEntraNaContagem()
     {
-        var ativo = _c.NovoProdutoComEstoque(5, nome: "Ativo");
-        var inativo = _c.NovoProdutoComEstoque(50, nome: "Inativo");
-        Saiu(ativo, 2);
-        Saiu(inativo, 40);
+        var ativo = ComEstoque("Ativo", 10);
+        var inativo = ComEstoque("Inativo", 10);
+        Saida(inativo, 4);
         inativo.Ativo = false;
 
-        var linha = Linha(Categoria.Medicamento);
+        var linha = Linha(CategoriaProduto.Medicamento);
 
         Assert.Equal(1, linha.QuantidadeDeProdutos);
-        Assert.Equal(5, linha.EstoqueAtual);
-        Assert.Equal(2, linha.TotalSaidas);
-        Assert.Equal(0, linha.ProdutosSemSaida);
-        Assert.DoesNotContain(linha.ProdutosUsados, c => c.Produto == inativo);
-    }
-
-    // ---------- Mais e menos usado ----------
-
-    [Fact]
-    public void Ordena_Do_Mais_Ao_Menos_Usado_E_Desempata_Por_Nome()
-    {
-        var pouco = _c.NovoProduto("Aaa pouco");
-        var muito = _c.NovoProduto("Zzz muito");
-        var empateB = _c.NovoProduto("Bbb empate");
-        var empateA = _c.NovoProduto("Abb empate");
-        Saiu(pouco, 1);
-        Saiu(muito, 20);
-        Saiu(empateB, 7);
-        Saiu(empateA, 7);
-
-        var linha = Linha(Categoria.Medicamento);
-
-        Assert.Equal(
-            new[] { "Zzz muito", "Abb empate", "Bbb empate", "Aaa pouco" },
-            linha.ProdutosUsados.Select(c => c.Produto.Nome));
-        Assert.Equal(35, linha.TotalSaidas);
-        var maisUsado = linha.MaisUsado!;
-        var menosUsado = linha.MenosUsado!;
-        Assert.Same(muito, maisUsado.Produto);
-        Assert.Equal(20, maisUsado.TotalSaidas);
-        Assert.Same(pouco, menosUsado.Produto);
-        Assert.Equal(1, menosUsado.TotalSaidas);
+        Assert.Equal(ativo.QuantidadeAtual, linha.EstoqueAtual);
+        Assert.Equal(0, linha.TotalSaidas);
     }
 
     [Fact]
-    public void Soma_As_Varias_Saidas_Do_Mesmo_Produto()
+    public void ComOsDadosReaisDoCean_TodasAsCategoriasVem_ESomaBateComORelatorioPorProduto()
     {
-        var produto = _c.NovoProduto();
-        Saiu(produto, 3);
-        Saiu(produto, 4, new DateTime(2026, 10, 20));
+        var loja = new DataStore(); // dados reais + historico importado
+        var relatorio = new RelatorioService(loja);
+        var inicio = new DateTime(2026, 1, 1);
+        var fim = new DateTime(2026, 12, 31, 23, 59, 59);
 
-        var usado = Assert.Single(Linha(Categoria.Medicamento).ProdutosUsados);
+        var porCategoria = relatorio.GerarConsumoPorCategoria(inicio, fim);
+        var porProduto = relatorio.GerarRelatorioConsumo(inicio, fim);
 
-        Assert.Equal(7, usado.TotalSaidas);
+        Assert.Equal(Enum.GetValues<CategoriaProduto>().Length, porCategoria.Count);
+        Assert.Equal(porProduto.Sum(i => i.TotalSaidas), porCategoria.Sum(c => c.TotalSaidas));
+        Assert.Equal(loja.Produtos.Where(p => p.Ativo).Sum(p => p.QuantidadeAtual), porCategoria.Sum(c => c.EstoqueAtual));
+    }
+
+    // ---- Textos ----
+
+    [Fact]
+    public void Textos_DescrevemMaisMenosUsadoESemSaida()
+    {
+        var dipirona = ComEstoque("Dipirona", 2000);
+        var vacina = ComEstoque("Vacina", 50);
+        ComEstoque("Parado", 5);
+        Saida(dipirona, 1200);
+        Saida(vacina, 2);
+        var linha = Linha(CategoriaProduto.Medicamento);
+
+        Assert.Equal("Mais usado: Dipirona (1.200 un.)", TextosDeConsumo.MaisUsado(linha));
+        Assert.Equal("Menos usado: Vacina (2 un.)", TextosDeConsumo.MenosUsado(linha));
+        Assert.Equal("1 produto(s) sem nenhuma saída no período.", TextosDeConsumo.SemSaida(linha));
+        Assert.Contains("3 produto(s)", TextosDeConsumo.Resumo(linha));
     }
 
     [Fact]
-    public void Menos_Usado_E_Nulo_Quando_So_Um_Produto_Teve_Saida()
+    public void Textos_CategoriaSemProdutoOuSemUso()
     {
-        var usado = _c.NovoProduto("Usado");
-        _c.NovoProduto("Parado");
-        Saiu(usado, 5);
+        var vazia = Linha(CategoriaProduto.Microchip);
 
-        var linha = Linha(Categoria.Medicamento);
+        Assert.Equal("Nenhuma saída neste período.", TextosDeConsumo.MaisUsado(vazia));
+        Assert.Equal(string.Empty, TextosDeConsumo.MenosUsado(vazia));
+        Assert.Equal(string.Empty, TextosDeConsumo.SemSaida(vazia));
+        Assert.Equal("Nenhum produto cadastrado nesta categoria.", TextosDeConsumo.Resumo(vazia));
+    }
 
-        Assert.Same(usado, linha.MaisUsado!.Produto);
-        Assert.Null(linha.MenosUsado);
-        Assert.Equal(1, linha.ProdutosSemSaida);
+    [Theory]
+    [InlineData(25, 100, "25%")]
+    [InlineData(1, 3, "33%")]
+    [InlineData(0, 50, "0%")]
+    [InlineData(5, 0, "—")]
+    [InlineData(1, 4621, "<1%")]
+    public void Percentual_ArredondaEProtegeDivisaoPorZero(double valor, double total, string esperado)
+    {
+        Assert.Equal(esperado, TextosDeConsumo.Percentual(valor, total));
     }
 
     [Fact]
-    public void Produto_Sem_Saida_Conta_Em_ProdutosSemSaida_E_Nunca_E_O_Menos_Usado()
+    public void Encurtar_CortaNomesLongosComReticencias()
     {
-        var a = _c.NovoProduto("Aaa");
-        var b = _c.NovoProduto("Bbb");
-        _c.NovoProduto("Parado 1");
-        _c.NovoProduto("Parado 2");
-        Saiu(a, 10);
-        Saiu(b, 2);
-
-        var linha = Linha(Categoria.Medicamento);
-
-        Assert.Equal(4, linha.QuantidadeDeProdutos);
-        Assert.Equal(2, linha.ProdutosSemSaida);
-        Assert.Same(b, linha.MenosUsado!.Produto);
-        Assert.All(linha.ProdutosUsados, c => Assert.True(c.TotalSaidas > 0));
-    }
-
-    // ---------- Coerência com o Relatório de Consumo e períodos ----------
-
-    [Fact]
-    public void Total_De_Saidas_Por_Categoria_Bate_Com_O_Relatorio_De_Consumo()
-    {
-        var remedio1 = _c.NovoProduto("Remédio 1", Categoria.Medicamento);
-        var remedio2 = _c.NovoProduto("Remédio 2", Categoria.Medicamento);
-        var racao = _c.NovoProduto("Ração", Categoria.Alimentar);
-        var seringa = _c.NovoProduto("Seringa", Categoria.Insumo);
-        Saiu(remedio1, 12);
-        Saiu(remedio2, 3);
-        Saiu(racao, 40);
-        Saiu(seringa, 6);
-        Saiu(seringa, 99, status: StatusMovimentacao.Cancelada);
-        _c.AdicionarMovimentacao(racao, TipoMovimentacao.Entrada, 500, DentroDoPeriodo);
-
-        var porCategoria = _c.Relatorios.GerarConsumoPorCategoria(Inicio, Fim);
-        var relatorio = _c.Relatorios.GerarRelatorioConsumo(Inicio, Fim);
-
-        Assert.Equal(relatorio.Sum(i => i.TotalSaidas), porCategoria.Sum(l => l.TotalSaidas));
-        foreach (var categoria in Enum.GetValues<Categoria>())
-        {
-            var doRelatorio = _c.Relatorios.GerarRelatorioConsumo(Inicio, Fim, categoria).Sum(i => i.TotalSaidas);
-            Assert.Equal(doRelatorio, porCategoria.Single(l => l.Categoria == categoria).TotalSaidas);
-        }
-    }
-
-    [Fact]
-    public void Datas_Invertidas_Sao_Recusadas()
-    {
-        Assert.Throws<InvalidOperationException>(() => _c.Relatorios.GerarConsumoPorCategoria(Fim, Inicio));
-    }
-
-    [Fact]
-    public void Nao_Altera_O_Estoque_Nem_O_Historico()
-    {
-        var produto = _c.NovoProdutoComEstoque(10, Cenario.Hoje.AddDays(90));
-        Saiu(produto, 3);
-        var antes = Cenario.Foto(produto);
-        var movimentacoes = _c.Dados.Movimentacoes.Count;
-
-        _c.Relatorios.GerarConsumoPorCategoria(Inicio, Fim);
-
-        Assert.Equal(antes, Cenario.Foto(produto));
-        Assert.Equal(movimentacoes, _c.Dados.Movimentacoes.Count);
+        Assert.Equal("Dipirona", TextosDeConsumo.Encurtar("Dipirona", 20));
+        Assert.Equal("Dipirona 500 mg…", TextosDeConsumo.Encurtar("Dipirona 500 mg injetável ampola", 16));
     }
 }
